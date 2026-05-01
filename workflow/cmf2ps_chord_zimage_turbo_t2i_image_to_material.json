@@ -1,0 +1,603 @@
+{
+  "id": "0b9de3ed-9755-49d3-96cf-f74c1ce27a19",
+  "revision": 0,
+  "last_node_id": 32,
+  "last_link_id": 45,
+  "nodes": [
+    {
+      "id": 16,
+      "type": "SaveImage",
+      "pos": [
+        3359.2591997671425,
+        478.59362265944844
+      ],
+      "size": [
+        234.40625,
+        315.328125
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 27
+        }
+      ],
+      "outputs": [],
+      "title": "Metalness",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.76"
+      },
+      "widgets_values": [
+        "metalness"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "ChordNormalToHeight",
+      "pos": [
+        3823.8547515477803,
+        102.45241335825916
+      ],
+      "size": [
+        225,
+        71.328125
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "normal",
+          "type": "IMAGE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "height",
+          "type": "IMAGE",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-chord",
+        "ver": "ee1681365545bf48b6c50a21d0fdfb07492ed4eb",
+        "Node name for S&R": "ChordNormalToHeight",
+        "aux_id": "ubisoft/ComfyUI-Chord"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "ResizeAndPadImage",
+      "pos": [
+        2939.1420782709697,
+        -257.7823136823093
+      ],
+      "size": [
+        320.53125,
+        130
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.76",
+        "Node name for S&R": "ResizeAndPadImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        "white",
+        "lanczos"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "ChordMaterialEstimation",
+      "pos": [
+        3313.289398834317,
+        -375.31725140060695
+      ],
+      "size": [
+        225,
+        143.328125
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "chord_model",
+          "type": "chord_model",
+          "link": 21
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "basecolor",
+          "type": "IMAGE",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "normal",
+          "type": "IMAGE",
+          "links": [
+            25,
+            35
+          ]
+        },
+        {
+          "name": "roughness",
+          "type": "IMAGE",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "metalness",
+          "type": "IMAGE",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-chord",
+        "ver": "53296391fe2cf7f3f370a5c6536dcb2177221257",
+        "Node name for S&R": "ChordMaterialEstimation",
+        "aux_id": "ubisoft/ComfyUI-Chord"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "ChordLoadModel",
+      "pos": [
+        2942.2220630243073,
+        -480.183792452671
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "chord_model",
+          "type": "chord_model",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-chord",
+        "ver": "ee1681365545bf48b6c50a21d0fdfb07492ed4eb",
+        "Node name for S&R": "ChordLoadModel",
+        "aux_id": "ubisoft/ComfyUI-Chord",
+        "models": [
+          {
+            "name": "chord_v1.safetensors",
+            "url": "https://huggingface.co/Ubisoft/ubisoft-laforge-chord/resolve/main/chord_v1.safetensors?download=true",
+            "directory": "checkpoints"
+          }
+        ]
+      },
+      "widgets_values": [
+        "chord_v1.safetensors"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "CMF2PS_SendToPhotoshop",
+      "pos": [
+        3903.1670188521002,
+        -508.6315973254775
+      ],
+      "size": [
+        250.78125,
+        339.328125
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 28
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "CMF2PS_SendToPhotoshop"
+      },
+      "widgets_values": [
+        "CMF2PS"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "CMF2PS_SendToPhotoshop",
+      "pos": [
+        4300.493220512955,
+        207.88409257372928
+      ],
+      "size": [
+        250.78125,
+        339.328125
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 30
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "CMF2PS_SendToPhotoshop"
+      },
+      "widgets_values": [
+        "CMF2PS"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "CMF2PS_SendToPhotoshop",
+      "pos": [
+        3732.5170783718636,
+        375.76853343150117
+      ],
+      "size": [
+        250.78125,
+        339.328125
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 31
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "CMF2PS_SendToPhotoshop"
+      },
+      "widgets_values": [
+        "CMF2PS"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "CMF2PS_LoadImage",
+      "pos": [
+        1958.4475548495882,
+        11.18333184253089
+      ],
+      "size": [
+        361.59375,
+        227.328125
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "изображение",
+          "type": "IMAGE",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "маска",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "ширина8",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "высота8",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "ширина",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "высота",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CMF2PS_LoadImage"
+      },
+      "widgets_values": [
+        "ps"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "CMF2PS_SendToPhotoshop",
+      "pos": [
+        4504.137191252879,
+        -232.0053474273381
+      ],
+      "size": [
+        250.78125,
+        339.328125
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 38
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "CMF2PS_SendToPhotoshop"
+      },
+      "widgets_values": [
+        "CMF2PS"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "NormalFormatAuto",
+      "pos": [
+        3740.849116987291,
+        -129.6895449580619
+      ],
+      "size": [
+        305.03125,
+        154
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "normal_map",
+          "type": "IMAGE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "normal_map",
+          "type": "IMAGE",
+          "links": [
+            37
+          ]
+        },
+        {
+          "name": "detected_format",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "conversion_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "texturealchemy",
+        "ver": "1.5.0",
+        "Node name for S&R": "NormalFormatAuto"
+      },
+      "widgets_values": [
+        "OpenGL"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "NormalIntensity",
+      "pos": [
+        4103.855905976065,
+        -137.28911026800853
+      ],
+      "size": [
+        270,
+        103.328125
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "normal",
+          "type": "IMAGE",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "normal",
+          "type": "IMAGE",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "texturealchemy",
+        "ver": "1.5.0",
+        "Node name for S&R": "NormalIntensity"
+      },
+      "widgets_values": [
+        3
+      ]
+    }
+  ],
+  "links": [
+    [
+      21,
+      12,
+      0,
+      20,
+      0,
+      "chord_model"
+    ],
+    [
+      22,
+      11,
+      0,
+      20,
+      1,
+      "IMAGE"
+    ],
+    [
+      25,
+      20,
+      1,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      20,
+      3,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      28,
+      20,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      30,
+      18,
+      0,
+      23,
+      0,
+      "IMAGE"
+    ],
+    [
+      31,
+      20,
+      2,
+      24,
+      0,
+      "IMAGE"
+    ],
+    [
+      34,
+      26,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      20,
+      1,
+      27,
+      0,
+      "IMAGE"
+    ],
+    [
+      37,
+      27,
+      0,
+      28,
+      0,
+      "IMAGE"
+    ],
+    [
+      38,
+      28,
+      0,
+      22,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 2,
+      "title": "Генерация материала",
+      "bounding": [
+        2932.221942449494,
+        -567.4999028093366,
+        1870.4180794188665,
+        1417.2584880545755
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.30292265563134896,
+      "offset": [
+        -2420.141901194187,
+        1168.6110925316489
+      ]
+    },
+    "frontendVersion": "1.41.21",
+    "workflowRendererVersion": "LG"
+  },
+  "version": 0.4
+}

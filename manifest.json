@@ -1,0 +1,103 @@
+{
+  "id": "Cmf2Ps",
+  "name": "Cmf2Ps",
+  "version": "0.9.6",
+  "main": "index.html",
+  "manifestVersion": 6,
+  "host": {
+    "app": "PS",
+    "minVersion": "23.0.0"
+  },
+  "requiredPermissions": {
+		"localFileSystem": "fullAccess",
+		"launchProcess": {
+			"schemes": [
+				"https",
+				"slack",
+				"file",
+				"ws",
+				"mailto"
+			],
+			"extensions": [
+				".xd",
+				".psd",
+        ".png",
+				".bat",
+				".cmd",
+				".sh"
+			]
+		},
+		"network": {
+			"domains": "all"
+		},
+		"clipboard": "readAndWrite",
+		"webview": {
+			"allow": "yes",
+			"domains": "all",
+			"enableMessageBridge": "localAndRemote"
+		},
+		"ipc": {
+			"enablePluginCommunication": true
+		},
+		"allowCodeGenerationFromStrings": true
+	},
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "mainPanel",
+      "label": "Cmf2Ps",
+      "minimumSize": {
+        "width": 560,
+        "height": 520
+      },
+      "maximumSize": {
+        "width": 2000,
+        "height": 2000
+      },
+      "preferredDockedSize": {
+        "width": 560,
+        "height": 520
+      },
+      "preferredFloatingSize": {
+        "width": 1000,
+        "height": 620
+      },
+      "icons": [
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/cmf2ps_main@2x.png",
+          "scale": [1, 2],
+          "theme": ["dark", "darkest"],
+          "species": ["generic"]
+        },
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/cmf2ps_main@2x.png",
+          "scale": [1, 2],
+          "theme": ["lightest", "light"],
+          "species": ["generic"]
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "width": 32,
+      "height": 32,
+      "path": "images/cmf2ps_main@2x.png",
+      "scale": [1, 2],
+      "theme": ["dark", "darkest"],
+      "species": ["generic"]
+    },
+    {
+      "width": 32,
+      "height": 32,
+      "path": "images/cmf2ps_main@2x.png",
+      "scale": [1, 2],
+      "theme": ["lightest", "light"],
+      "species": ["generic"]
+    }
+  ]
+}
