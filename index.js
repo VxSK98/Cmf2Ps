@@ -200,16 +200,21 @@ document
 
 ////////////////////////////
 
-/* document.getElementById("btnTest").addEventListener("click", async () => {
-  try {
-    const p1 = perfStart("btnTest");
-    await exportSnapshotMask();
+// document.getElementById("btnTest").addEventListener("click", async () => {
+//   try {
+//     const p1 = perfStart("btnTest");
+//     if (inpaintMaskMod) {
+//       await makeMaskAndSnapshot3("snapshot", true);
+//     } else {
+//       await makeMaskAndSnapshot3("snapshot", false);
+//     }
+//     // await exportSnapshotMask();
 
-    perfEnd(p1);
-  } catch (err) {
-    console.error("ComfyUI error:", err);
-  }
-}); */
+//     perfEnd(p1);
+//   } catch (err) {
+//     console.error("ComfyUI error:", err);
+//   }
+// });
 
 ////////////////////////////
 
@@ -466,41 +471,36 @@ document
 
 async function applySelectedPreview() {
   if (selectedPreviewIndex < 0) return;
-  const p1 = perfStart("imageMask");
-  await deleteLayerIfExists("cmf2ps_preview");
-  const item = previewItems[selectedPreviewIndex];
+  await runAsSingleHistoryState("CMF2PS Apply Preview", async () => {
+    const p1 = perfStart("imageMask");
+    await deleteLayerIfExistsInCurrentModal("cmf2ps_preview");
+    const item = previewItems[selectedPreviewIndex];
 
-  const imageMaskBase64 = await entryToBase64(imageMask);
-  const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
-  perfEnd(p1);
-  const p2 = perfStart("импорт маски");
-  await openImgInPS(imageMaskBytes, "cmf2ps_output_mask.png");
-  await require("photoshop").core.executeAsModal(centerActiveLayer, {});
-  await require("photoshop").core.executeAsModal(resetTransform, {
-    commandName: "Action Commands",
-  });
-  // await require("photoshop").core.executeAsModal(qSelectMask, {
-  //   commandName: "qSelectMask",
-  // });
+    const imageMaskBase64 = await entryToBase64(imageMask);
+    const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
+    perfEnd(p1);
+    const p2 = perfStart("импорт маски");
+    await openImgInPS(imageMaskBytes, "cmf2ps_output_mask.png");
+    await centerActiveLayer();
+    await resetTransform();
+    // await require("photoshop").core.executeAsModal(qSelectMask, {
+    //   commandName: "qSelectMask",
+    // });
 
-  /*   await require("photoshop").core.executeAsModal(maskFix, {
+    /*   await require("photoshop").core.executeAsModal(maskFix, {
     commandName: "Action Commands",
   }); */
-  await require("photoshop").core.executeAsModal(selectMask, {
-    commandName: "Action Commands",
+    await selectMask();
+    perfEnd(p2);
+    const p3 = perfStart("импорт bitmap");
+    const imageOutputBytes = base64ToUint8Array(item.data);
+    await openImgInPS2(imageOutputBytes, "cmf2ps_output.png");
+    await resetTransform();
+    perfEnd(p3);
+    const p4 = perfStart("применить маску");
+    await applyMaskInCurrentModal();
+    perfEnd(p4);
   });
-  perfEnd(p2);
-  const p3 = perfStart("импорт bitmap");
-  const bytes = base64ToUint8Array(item.data);
-  const file = await writeTempPng(bytes, "cmf2ps_output.png");
-  await openImgInPS2(file);
-  await require("photoshop").core.executeAsModal(resetTransform, {
-    commandName: "Action Commands",
-  });
-  perfEnd(p3);
-  const p4 = perfStart("применить маску");
-  await applyMask();
-  perfEnd(p4);
 }
 
 document
@@ -512,58 +512,56 @@ document
 
 async function addPreviewLayer() {
   if (selectedPreviewIndex < 0) return;
-  const p1 = perfStart("imageMask");
-  let item = previewItems[selectedPreviewIndex];
-  if (firstRender == true) {
-    item = previewItems[0];
-  }
-  firstRender = false;
-  const imageMaskBase64 = await entryToBase64(imageMask);
-  const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
-  perfEnd(p1);
-  const p2 = perfStart("импорт маски");
-  await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask.png");
-  await require("photoshop").core.executeAsModal(centerActiveLayer, {});
+  await runAsSingleHistoryState("CMF2PS Preview", async () => {
+    await deleteLayerIfExistsInCurrentModal("cmf2ps_preview");
+    const p1 = perfStart("imageMask");
+    let item = previewItems[selectedPreviewIndex];
+    if (firstRender == true) {
+      item = previewItems[0];
+    }
+    firstRender = false;
+    const imageMaskBase64 = await entryToBase64(imageMask);
+    const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
+    perfEnd(p1);
+    const p2 = perfStart("импорт маски");
+    await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask.png");
+    await centerActiveLayer();
 
-  await require("photoshop").core.executeAsModal(resetTransform, {
-    commandName: "Action Commands",
-  });
-  // await require("photoshop").core.executeAsModal(qSelectMask, {
-  //   commandName: "qSelectMask",
-  // });
-  /*   const p2b = perfStart("maskFix");
+    await resetTransform();
+    // await require("photoshop").core.executeAsModal(qSelectMask, {
+    //   commandName: "qSelectMask",
+    // });
+    /*   const p2b = perfStart("maskFix");
     await require("photoshop").core.executeAsModal(maskFix, {
     commandName: "Action Commands",
   });
   perfEnd(p2b); */
-  await require("photoshop").core.executeAsModal(selectMask, {
-    commandName: "Action Commands",
-  });
-  perfEnd(p2);
-  const p3 = perfStart("импорт bitmap");
-  const bytes = base64ToUint8Array(item.data);
-  const file = await writeTempPng(bytes, "cmf2ps_preview.png");
-  //  await openImgInPS(imageMaskBytes, "cmf2ps_preview.png");
-  await openImgInPS2(file);
+    await selectMask();
+    perfEnd(p2);
+    const p3 = perfStart("импорт bitmap");
+    const imageOutputBytes = base64ToUint8Array(item.data);
+    // await openImgInPS(imageMaskBytes, "cmf2ps_preview.png");
+    await openImgInPS2(imageOutputBytes, "cmf2ps_preview.png");
 
-  await require("photoshop").core.executeAsModal(resetTransform, {
-    commandName: "Action Commands",
+    await resetTransform();
+    perfEnd(p3);
+    const p4 = perfStart("применить маску");
+    await applyMaskInCurrentModal();
+    perfEnd(p4);
   });
-  perfEnd(p3);
-  const p4 = perfStart("применить маску");
-  await applyMask();
-  perfEnd(p4);
 }
 
 async function applyMask() {
+  await core.executeAsModal(applyMaskInCurrentModal, {
+    commandName: "Action Commands",
+  });
+}
+
+async function applyMaskInCurrentModal() {
   if (bApplyMask == true) {
-    await require("photoshop").core.executeAsModal(appendMask, {
-      commandName: "Action Commands",
-    });
+    await appendMask();
   } else {
-    await require("photoshop").core.executeAsModal(delTempMask, {
-      commandName: "Action Commands",
-    });
+    await delTempMask();
   }
 }
 
@@ -849,31 +847,35 @@ function findAnyLayerByName(doc, targetName) {
 async function deleteLayerIfExists(layerName) {
   await core.executeAsModal(
     async () => {
-      const doc = app.activeDocument;
-      if (!doc) return;
-
-      const layer = findAnyLayerByName(doc, layerName);
-      if (!layer) return;
-
-      await action.batchPlay(
-        [
-          {
-            _obj: "delete",
-            _target: [
-              {
-                _ref: "layer",
-                _id: layer.id,
-              },
-            ],
-          },
-        ],
-        {
-          synchronousExecution: true,
-          modalBehavior: "execute",
-        },
-      );
+      await deleteLayerIfExistsInCurrentModal(layerName);
     },
     { commandName: `CMF2PS: Delete ${layerName}` },
+  );
+}
+
+async function deleteLayerIfExistsInCurrentModal(layerName) {
+  const doc = app.activeDocument;
+  if (!doc) return;
+
+  const layer = findAnyLayerByName(doc, layerName);
+  if (!layer) return;
+
+  await action.batchPlay(
+    [
+      {
+        _obj: "delete",
+        _target: [
+          {
+            _ref: "layer",
+            _id: layer.id,
+          },
+        ],
+      },
+    ],
+    {
+      synchronousExecution: true,
+      modalBehavior: "execute",
+    },
   );
 }
 
@@ -1044,6 +1046,22 @@ async function showAllLayers() {
   );
 }
 
+function revealAllLayersInDocument(doc) {
+  function revealRecursive(layers) {
+    for (const layer of layers) {
+      try {
+        layer.visible = true;
+      } catch (e) {}
+
+      if (layer.layers && layer.layers.length) {
+        revealRecursive(layer.layers);
+      }
+    }
+  }
+
+  revealRecursive(doc.layers);
+}
+
 async function isInpaintMaskEmpty() {
   return await core.executeAsModal(
     async () => {
@@ -1077,6 +1095,22 @@ async function isInpaintMaskEmpty() {
 
 ////////////////
 
+async function setPPI72() {
+  let commands = [
+    // Pазмер изображения
+    {
+      _obj: "imageSize",
+      resolution: {
+        _unit: "densityUnit",
+        _value: 72.0,
+      },
+    },
+  ];
+  return await require("photoshop").action.batchPlay(commands, {});
+}
+
+////////////////
+
 const {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -1091,6 +1125,97 @@ const {
   commandsMakeRef,
 } = require("./macros");
 
+async function restoreHistoryState(historyState) {
+  const historyStateId = historyState?._id ?? historyState?.id;
+  if (!historyStateId) return;
+
+  await action.batchPlay(
+    [
+      {
+        _obj: "select",
+        _target: [
+          {
+            _ref: "historyState",
+            _id: historyStateId,
+          },
+        ],
+      },
+    ],
+    {},
+  );
+}
+
+// Основной способ: открыть временную history-зону для операций снапшота.
+// Она откатывается к текущему состоянию документа, даже если выделение не создало шаг истории.
+async function suspendTemporaryHistory(executionContext, doc, name) {
+  const hostControl = executionContext?.hostControl;
+  if (!hostControl?.suspendHistory || !hostControl?.resumeHistory) {
+    return null;
+  }
+
+  try {
+    return await hostControl.suspendHistory({
+      documentID: doc.id ?? doc._id,
+      name,
+    });
+  } catch (e) {
+    console.warn(
+      "[CMF2PS] suspendHistory failed, using historyState fallback",
+      e,
+    );
+    return null;
+  }
+}
+
+// Закрываем временную history-зону с commit=false: все временные слои/кропы отменяются.
+// Если suspendHistory недоступен, используем старый откат по historyState как запасной путь.
+async function rollbackTemporaryHistory(
+  executionContext,
+  historySuspension,
+  fallbackState,
+) {
+  if (historySuspension) {
+    await executionContext.hostControl.resumeHistory(historySuspension, false);
+    return;
+  }
+
+  await restoreHistoryState(fallbackState);
+}
+
+// Для apply/preview: все внутренние действия записываются в историю одним пунктом.
+// commit=true сохраняет результат, но склеивает place/reset/mask/delete в один history state.
+async function runAsSingleHistoryState(name, callback) {
+  return await core.executeAsModal(
+    async (executionContext) => {
+      const historySuspension = await suspendTemporaryHistory(
+        executionContext,
+        app.activeDocument,
+        name,
+      );
+
+      try {
+        const result = await callback();
+        if (historySuspension) {
+          await executionContext.hostControl.resumeHistory(
+            historySuspension,
+            true,
+          );
+        }
+        return result;
+      } catch (e) {
+        if (historySuspension) {
+          await executionContext.hostControl.resumeHistory(
+            historySuspension,
+            false,
+          );
+        }
+        throw e;
+      }
+    },
+    { commandName: name },
+  );
+}
+
 async function sendRef() {
   return await core.executeAsModal(
     async () => {
@@ -1103,9 +1228,7 @@ async function sendRef() {
       await require("photoshop").action.batchPlay(commandsMakeRef, {});
       // 2) Кроп
       // const p3 = perfStart("Кроп perf");
-      await require("photoshop").core.executeAsModal(layerPlusPaddingCrop, {
-        commandName: "layerPlusPaddingCrop",
-      });
+      await layerPlusPaddingCrop();
       // perfEnd(p3);
       // 3) Cохраняем кроп
       // const p4 = perfStart("Cохраняем кроп perf");
@@ -1142,13 +1265,20 @@ async function sendRef() {
 
 async function makeMaskAndSnapshot3(imgName, bInpaintMask) {
   return await core.executeAsModal(
-    async () => {
+    async (executionContext) => {
       const folder = await fs.getDataFolder();
       // Сохраняем состояние
       const startState = app.activeDocument.activeHistoryState;
+      // activeHistoryState может не обновиться после простого перемещения выделения.
+      // Поэтому временные действия снапшота лучше откатывать через suspendHistory.
+      const historySuspension = await suspendTemporaryHistory(
+        executionContext,
+        app.activeDocument,
+        "CMF2PS Snapshot",
+      );
       // 1) Экспорт
       const p1 = perfStart("Экспорт");
-      const p1b = perfStart("commandsMakeMaskMerge5p01 perf");
+      const p1b = perfStart("commandsMakeMaskMerge5p01");
       if (bInpaintMask == true && (await isInpaintMaskEmpty()) == false) {
         await require("photoshop").action.batchPlay(commandsSetRGB, {});
       }
@@ -1181,9 +1311,7 @@ async function makeMaskAndSnapshot3(imgName, bInpaintMask) {
         commandsPrepareLayerToCropMMAS3,
         {},
       );
-      await require("photoshop").core.executeAsModal(layerPlusPaddingCrop, {
-        commandName: "layerPlusPaddingCrop",
-      });
+      await layerPlusPaddingCrop();
 
       const docCrop = app.activeDocument;
       snapshotSize = {
@@ -1205,7 +1333,7 @@ async function makeMaskAndSnapshot3(imgName, bInpaintMask) {
       // 5.1) Генерация InpaintMask
       const p5 = perfStart("Генерация InpaintMask");
       if (bInpaintMask == true) {
-        await showAllLayers();
+        revealAllLayersInDocument(app.activeDocument);
         await require("photoshop").action.batchPlay(
           commandsMakeInpaintMaskMMAS3,
           {},
@@ -1224,21 +1352,14 @@ async function makeMaskAndSnapshot3(imgName, bInpaintMask) {
         await pushInpaintMaskToComfy(inpaintMaskBase64);
       }
       perfEnd(p5);
-      // 6) Возвращаем в исходное состояние
-      await action.batchPlay(
-        [
-          {
-            _obj: "select",
-            _target: [
-              {
-                _ref: "historyState",
-                _id: startState._id,
-              },
-            ],
-          },
-        ],
-        {},
+      // Возвращаем документ к состоянию на момент запуска снапшота,
+      // не откатывая новое положение выделения к старому historyState.
+      await rollbackTemporaryHistory(
+        executionContext,
+        historySuspension,
+        startState,
       );
+      return;
     },
     { commandName: "CMF2PS Snapshot" },
   );
@@ -1288,50 +1409,6 @@ async function exportSnapshotMask() {
         ],
         {},
       );
-    },
-    { commandName: "CMF2PS Snapshot" },
-  );
-}
-
-// Заменить - Будет удалено
-async function exportSnapshotMask_old() {
-  return await core.executeAsModal(
-    async () => {
-      const folder = await fs.getDataFolder();
-      let commands01 = [
-        // Сделать
-        {
-          _obj: "make",
-          new: {
-            _class: "document",
-          },
-          using: {
-            _property: "selection",
-            _ref: "channel",
-          },
-        },
-      ];
-      let commands03 = [
-        // Закрыть
-        {
-          _obj: "close",
-          forceNotify: true,
-          saving: {
-            _enum: "yesNo",
-            _value: "no",
-          },
-        },
-      ];
-      await require("photoshop").action.batchPlay(commands01, {});
-      // сохраняем активный документ (это и есть clipboard-doc)
-
-      const entryMask = await folder.createFile("snapshot_mask.png", {
-        overwrite: true,
-      });
-      await app.activeDocument.saveAs.png(entryMask, { compression: 5 }, true);
-      console.log("mask saved to:", entryMask.nativePath);
-      imageMask = entryMask;
-      /* await require("photoshop").action.batchPlay(commands03, {}); */
     },
     { commandName: "CMF2PS Snapshot" },
   );
@@ -1907,129 +1984,91 @@ function getSelectionCenter() {
 }
 
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
-async function openImgInPS2(fileEntry) {
-  try {
-    console.log("[CMF2PS] openImgInPS2 called");
+async function openImgInPS2(bytes, nameLayer) {
+  const file = await writeTempPng(bytes, nameLayer);
+  const targetDoc = app.activeDocument;
+  const docPPI = app.activeDocument.resolution;
+  const ppiFactor = docPPI / 72;
 
-    await core.executeAsModal(
-      async () => {
-        const targetDoc = app.activeDocument;
+  const docW = Math.round(toPx(targetDoc.width));
+  const docH = Math.round(toPx(targetDoc.height));
+  const sel = getSelectionCenter();
 
-        // читаем размер файла ВНУТРИ ЭТОГО ЖЕ modal
-        // const imgSize = await getImageSize(fileEntry);
+  const autoFit = Math.min(
+    1,
+    docW / snapshotSize.width,
+    docH / snapshotSize.height,
+  );
+  const correction = ((1 / autoFit) * 100) / ppiFactor;
 
-        // вернуть исходный документ как активный
-        // app.activeDocument = targetDoc;
-        const docPPI = app.activeDocument.resolution;
-        const ppiFactor = docPPI / 72;
+  console.log("[CMF2PS] imgPPI", imgPPI);
+  console.log("[CMF2PS] docPPI", docPPI);
+  console.log("[CMF2PS] snapshotSize", snapshotSize);
+  console.log("[CMF2PS] docSize", { width: docW, height: docH });
+  console.log("[CMF2PS] selection", sel);
+  console.log("[CMF2PS] autoFit", autoFit);
+  console.log("[CMF2PS] correction", correction);
 
-        const docW = Math.round(toPx(targetDoc.width));
-        const docH = Math.round(toPx(targetDoc.height));
+  const token = await fs.createSessionToken(file);
 
-        const sel = getSelectionCenter();
-
-        // авто-fit, который Photoshop применяет сам при place
-        const autoFit = Math.min(
-          1,
-          docW / snapshotSize.width,
-          docH / snapshotSize.height,
-        );
-
-        // если нужно заполнение выделения с сохранением пропорций
-        const desiredOverallScale = Math.max(
-          sel.width / snapshotSize.width,
-          sel.height / snapshotSize.height,
-        );
-
-        // доп. коррекция поверх auto-fit
-        const correction = ((1 / autoFit) * 100) / ppiFactor;
-
-        console.log("[CMF2PS] imgPPI", imgPPI);
-        console.log("[CMF2PS] docPPI", docPPI);
-        console.log("[CMF2PS] snapshotSize", snapshotSize);
-        console.log("[CMF2PS] docSize", { width: docW, height: docH });
-        console.log("[CMF2PS] selection", sel);
-        console.log("[CMF2PS] autoFit", autoFit);
-        console.log("[CMF2PS] desiredOverallScale", desiredOverallScale);
-        console.log("[CMF2PS] correction", correction);
-
-        const token = await fs.createSessionToken(fileEntry);
-
-        const res = await action.batchPlay(
-          [
-            {
-              _obj: "placeEvent",
-              null: {
-                _kind: "local",
-                _path: token,
-              },
-              linked: false,
-              freeTransformCenterState: {
-                _enum: "quadCenterState",
-                _value: "QCSAverage",
-              },
-              width: {
-                _unit: "percentUnit",
-                _value: correction,
-              },
-              height: {
-                _unit: "percentUnit",
-                _value: correction,
-              },
-              _options: {
-                dialogOptions: "dontDisplay",
-              },
-            },
-          ],
-          {
-            synchronousExecution: true,
-            modalBehavior: "execute",
-          },
-        );
-
-        console.log("[CMF2PS] placeEvent result", res);
+  const res = await action.batchPlay(
+    [
+      {
+        _obj: "placeEvent",
+        null: {
+          _kind: "local",
+          _path: token,
+        },
+        linked: false,
+        freeTransformCenterState: {
+          _enum: "quadCenterState",
+          _value: "QCSAverage",
+        },
+        width: {
+          _unit: "percentUnit",
+          _value: correction,
+        },
+        height: {
+          _unit: "percentUnit",
+          _value: correction,
+        },
+        _options: {
+          dialogOptions: "dontDisplay",
+        },
       },
-      { commandName: "Place image correct" },
-    );
-  } catch (e) {
-    console.error("[CMF2PS] openImgInPS2 error", e);
-  }
+    ],
+    {
+      synchronousExecution: true,
+      modalBehavior: "execute",
+    },
+  );
+
+  console.log("[CMF2PS] placeEvent result", res);
 }
 
 // Открыть PNG и задублировать слой в исходный документ
 async function openImgInPS(bytes, nameLayer) {
   const file = await writeTempPng(bytes, nameLayer);
-  // await importIMGTest();
-  // если нет открытых документов — просто открываем как новый
   if (app.documents.length === 0) {
-    await core.executeAsModal(() => app.open(file), {
-      commandName: "CMF2PS: Open image",
-    });
+    await app.open(file);
     return;
   }
-  // Важно: placeEvent работает по активному документу
+
   const targetDoc = app.activeDocument;
   const token = await fs.createSessionToken(file);
-  await core.executeAsModal(
-    async () => {
-      // на всякий случай фиксируем активный документ (иногда плагины/действия его меняют)
-      app.activeDocument = targetDoc;
+  app.activeDocument = targetDoc;
 
-      const res = await action.batchPlay(
-        [
-          {
-            _obj: "placeEvent",
-            target: { _path: token, _kind: "local" },
-            // Эти два поля часто помогают избежать диалогов/трансформа:
-            _options: { dialogOptions: "dontDisplay" },
-          },
-        ],
-        { synchronousExecution: true, modalBehavior: "execute" },
-      );
-      console.log("[CMF2PS] placeEvent result:", res);
-    },
-    { commandName: "CMF2PS: Place Embedded" },
+  const res = await action.batchPlay(
+    [
+      {
+        _obj: "placeEvent",
+        target: { _path: token, _kind: "local" },
+        _options: { dialogOptions: "dontDisplay" },
+      },
+    ],
+    { synchronousExecution: true, modalBehavior: "execute" },
   );
+  console.log("[CMF2PS] placeEvent result:", res);
 }
 
 ///////// Функции для превью:
@@ -2076,7 +2115,6 @@ function renderPreviewList() {
 
       wrap.addEventListener("click", async () => {
         selectedPreviewIndex = index;
-        await deleteLayerIfExists("cmf2ps_preview");
         await addPreviewLayer();
         renderPreviewList();
       });
@@ -2254,6 +2292,11 @@ async function handleWsMessage(msg) {
       await exportSnapshotMask();
       bSnapshot = true;
     }
+    let docPPI = app.activeDocument.resolution;
+    if (docPPI != imgPPI) {
+      await require("photoshop").core.executeAsModal(setPPI72, {});
+    }
+    console.log("docPPI", docPPI);
     //
     // selectedPreviewIndex++;
     if (bSnapshot == true) {
