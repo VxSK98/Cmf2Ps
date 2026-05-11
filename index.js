@@ -1123,6 +1123,11 @@ const {
   commandsFixBackgroundMMAS3,
   commandsSetRGB,
   commandsMakeRef,
+  commandsSendBitmapToMask,
+  commandApplyMask,
+  commandSelDown,
+  commandSelUp,
+  commandDelLayer,
 } = require("./macros");
 
 async function restoreHistoryState(historyState) {
@@ -1486,181 +1491,6 @@ let commandNewLayerTemp = [
   },
 ];
 
-let commandsBase = [
-  // Выделение назад слой
-  {
-    _obj: "select",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "backwardEnum",
-      },
-    ],
-    makeVisible: false,
-  },
-  // Задать Выделение
-  {
-    _obj: "set",
-    _target: [
-      {
-        _property: "selection",
-        _ref: "channel",
-      },
-    ],
-    to: {
-      _enum: "ordinal",
-      _value: "allEnum",
-    },
-  },
-  // Kопировать
-  {
-    _obj: "copyEvent",
-    copyHint: "pixels",
-  },
-  // Выделение вперед слой
-  {
-    _obj: "select",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "forwardEnum",
-      },
-    ],
-
-    makeVisible: false,
-  },
-  // Сделать
-  {
-    _obj: "make",
-    at: {
-      _enum: "channel",
-      _ref: "channel",
-      _value: "mask",
-    },
-    new: {
-      _class: "channel",
-    },
-    using: {
-      _enum: "userMaskEnabled",
-      _value: "revealSelection",
-    },
-  },
-  // Показать текущ. канал
-  {
-    _obj: "show",
-    null: [
-      {
-        _enum: "ordinal",
-        _ref: "channel",
-        _value: "targetEnum",
-      },
-    ],
-  },
-  // Вставить
-  {
-    _obj: "paste",
-    antiAlias: {
-      _enum: "antiAliasType",
-      _value: "antiAliasNone",
-    },
-    as: {
-      _class: "pixel",
-    },
-    inPlace: true,
-  },
-  // Задать Выделение
-  {
-    _obj: "set",
-    _target: [
-      {
-        _property: "selection",
-        _ref: "channel",
-      },
-    ],
-    to: {
-      _enum: "ordinal",
-      _ref: "channel",
-      _value: "targetEnum",
-    },
-  },
-  // Выделение RGB канал
-  {
-    _obj: "select",
-    _target: [
-      {
-        _enum: "channel",
-        _ref: "channel",
-        _value: "RGB",
-      },
-    ],
-    makeVisible: false,
-  },
-];
-
-let commandApplyMask = [
-  // Сделать
-  {
-    _obj: "make",
-    at: {
-      _enum: "channel",
-      _ref: "channel",
-      _value: "mask",
-    },
-    new: {
-      _class: "channel",
-    },
-    using: {
-      _enum: "userMaskEnabled",
-      _value: "revealAll",
-    },
-  },
-];
-
-let commandSelDown = [
-  // Выделение назад слой
-  {
-    _obj: "select",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "backwardEnum",
-      },
-    ],
-    makeVisible: false,
-  },
-];
-
-let commandSelUp = [
-  // Выделение вперед слой
-  {
-    _obj: "select",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "forwardEnum",
-      },
-    ],
-    makeVisible: false,
-  },
-];
-let commandDelLayer = [
-  // Удалить текущ. слой
-  {
-    _obj: "delete",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "targetEnum",
-      },
-    ],
-  },
-];
-
 async function blurMask(vBlur) {
   let commands = [
     // Выделение маска канал
@@ -1870,7 +1700,7 @@ let commandsMoveUpLayer = [
 
 async function selectMask() {
   await require("photoshop").action.batchPlay(commandNewLayerTemp, {});
-  await require("photoshop").action.batchPlay(commandsBase, {});
+  await require("photoshop").action.batchPlay(commandsSendBitmapToMask, {});
   await require("photoshop").action.batchPlay(commandDelLayer, {});
 }
 
@@ -1904,7 +1734,7 @@ async function appendMask() {
   // });
   // await require("photoshop").action.batchPlay(commandDelLayer, {});
 
-  await require("photoshop").action.batchPlay(commandsBase, {});
+  await require("photoshop").action.batchPlay(commandsSendBitmapToMask, {});
   await require("photoshop").action.batchPlay(commandSelDown, {});
   await require("photoshop").action.batchPlay(commandDelLayer, {});
   await require("photoshop").action.batchPlay(commandSelUp, {});

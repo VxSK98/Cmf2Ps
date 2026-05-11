@@ -630,6 +630,183 @@ const commandsMakeRef = [
   },
 ];
 
+/////////// Макросы работы с маской
+
+const commandsSendBitmapToMask = [
+  // Выделение назад слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "backwardEnum",
+      },
+    ],
+    makeVisible: false,
+  },
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    to: {
+      _enum: "ordinal",
+      _value: "allEnum",
+    },
+  },
+  // Kопировать
+  {
+    _obj: "copyEvent",
+    copyHint: "pixels",
+  },
+  // Выделение вперед слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "forwardEnum",
+      },
+    ],
+
+    makeVisible: false,
+  },
+  // Сделать
+  {
+    _obj: "make",
+    at: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "mask",
+    },
+    new: {
+      _class: "channel",
+    },
+    using: {
+      _enum: "userMaskEnabled",
+      _value: "revealSelection",
+    },
+  },
+  // Показать текущ. канал
+  {
+    _obj: "show",
+    null: [
+      {
+        _enum: "ordinal",
+        _ref: "channel",
+        _value: "targetEnum",
+      },
+    ],
+  },
+  // Вставить
+  {
+    _obj: "paste",
+    antiAlias: {
+      _enum: "antiAliasType",
+      _value: "antiAliasNone",
+    },
+    as: {
+      _class: "pixel",
+    },
+    inPlace: true,
+  },
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    to: {
+      _enum: "ordinal",
+      _ref: "channel",
+      _value: "targetEnum",
+    },
+  },
+  // Выделение RGB канал
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "channel",
+        _ref: "channel",
+        _value: "RGB",
+      },
+    ],
+    makeVisible: false,
+  },
+];
+
+const commandApplyMask = [
+  // Сделать
+  {
+    _obj: "make",
+    at: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "mask",
+    },
+    new: {
+      _class: "channel",
+    },
+    using: {
+      _enum: "userMaskEnabled",
+      _value: "revealAll",
+    },
+  },
+];
+
+const commandSelDown = [
+  // Выделение назад слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "backwardEnum",
+      },
+    ],
+    makeVisible: false,
+  },
+];
+
+const commandSelUp = [
+  // Выделение вперед слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "forwardEnum",
+      },
+    ],
+    makeVisible: false,
+  },
+];
+const commandDelLayer = [
+  // Удалить текущ. слой
+  {
+    _obj: "delete",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "targetEnum",
+      },
+    ],
+  },
+];
+
 module.exports = {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -642,4 +819,9 @@ module.exports = {
   commandsFixBackgroundMMAS3,
   commandsSetRGB,
   commandsMakeRef,
+  commandsSendBitmapToMask,
+  commandApplyMask,
+  commandSelDown,
+  commandSelUp,
+  commandDelLayer,
 };
