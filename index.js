@@ -551,12 +551,6 @@ async function addPreviewLayer() {
   });
 }
 
-async function applyMask() {
-  await core.executeAsModal(applyMaskInCurrentModal, {
-    commandName: "Action Commands",
-  });
-}
-
 async function applyMaskInCurrentModal() {
   if (bApplyMask == true) {
     await appendMask();
@@ -1111,6 +1105,8 @@ async function setPPI72() {
 
 ////////////////
 
+ // Импорт макросов
+
 const {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -1124,6 +1120,7 @@ const {
   commandsSetRGB,
   commandsMakeRef,
   commandsSendBitmapToMask,
+  commandsMaskFromImage,
   commandApplyMask,
   commandSelDown,
   commandSelUp,
@@ -1734,7 +1731,7 @@ async function appendMask() {
   // });
   // await require("photoshop").action.batchPlay(commandDelLayer, {});
 
-  await require("photoshop").action.batchPlay(commandsSendBitmapToMask, {});
+  await require("photoshop").action.batchPlay(commandsMaskFromImage, {});
   await require("photoshop").action.batchPlay(commandSelDown, {});
   await require("photoshop").action.batchPlay(commandDelLayer, {});
   await require("photoshop").action.batchPlay(commandSelUp, {});

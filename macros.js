@@ -745,6 +745,47 @@ const commandsSendBitmapToMask = [
   },
 ];
 
+const commandsMaskFromImage = [
+  // Сделать
+  {
+    _obj: "make",
+    at: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "mask",
+    },
+    new: {
+      _class: "channel",
+    },
+    using: {
+      _enum: "userMaskEnabled",
+      _value: "revealAll",
+    },
+  },
+  // Внешний канал
+  {
+    _obj: "applyImageEvent",
+    with: {
+      _obj: "calculation",
+      preserveTransparency: true,
+      to: {
+        _ref: [
+          {
+            _enum: "channel",
+            _ref: "channel",
+            _value: "RGB",
+          },
+          {
+            _enum: "ordinal",
+            _ref: "layer",
+            _value: "backwardEnum",
+          },
+        ],
+      },
+    },
+  },
+];
+
 const commandApplyMask = [
   // Сделать
   {
@@ -819,7 +860,8 @@ module.exports = {
   commandsFixBackgroundMMAS3,
   commandsSetRGB,
   commandsMakeRef,
-  commandsSendBitmapToMask,
+  commandsSendBitmapToMask, //
+  commandsMaskFromImage,
   commandApplyMask,
   commandSelDown,
   commandSelUp,
