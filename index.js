@@ -37,7 +37,60 @@ let maskPaddingValue = 8;
 
 let selectedAspect = "1024x1024";
 
-// Функции профайлера
+
+
+/////////////////////// Функции сохранения параметров
+
+// Ключи настроек в localStorage. Значения переживают закрытие панели/Photoshop.
+const SETTINGS_KEYS = {
+  twoLevelLayout: "cmf2ps_two_level_layout",
+  maskPadding: "cmf2ps_mask_padding",
+  maskBlur: "cmf2ps_mask_blur",
+  selectedAspect: "cmf2ps_selected_aspect",
+  applyMask: "cmf2ps_apply_mask",
+};
+
+// Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
+function saveSetting(key, value) {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch (e) {
+    console.log("Failed to save setting:", key, e);
+  }
+}
+
+// Безопасное чтение настройки. null значит, что сохраненного значения еще нет.
+function loadSetting(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    console.log("Failed to load setting:", key, e);
+    return null;
+  }
+}
+
+// Читает число и ограничивает его диапазоном контрола, чтобы не применить битое значение.
+function loadNumberSetting(key, fallback, min, max) {
+  const raw = loadSetting(key);
+  if (raw === null) return fallback;
+
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return fallback;
+
+  return Math.min(max, Math.max(min, value));
+}
+
+// Булевые настройки храним как "1"/"0", чтобы не зависеть от строк true/false.
+function loadBooleanSetting(key, fallback) {
+  const raw = loadSetting(key);
+  if (raw === null) return fallback;
+
+  return raw === "1";
+}
+
+///////////////////////
+
+/////////////////////// Функции профайлера
 const PERF = true;
 
 function perfStart(label) {
@@ -112,18 +165,6 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
       });
     }
     bSnapshot = true;
-    //Старая версия (3)
-    // await require("photoshop").core.executeAsModal(exportSnapshotMask_new, {
-    //   commandName: "Action Commands",
-    // });
-    // const entry = await imgSnapshotAndSave_new("snapshot");
-    // console.log("saved to:", entry.nativePath);
-    // const b64 = await entryToBase64(entry);
-    // await pushSnapshotToComfy(b64);
-    //
-
-    // await makeMaskAndSnapshot("snapshot", true, inpaintMaskMod);
-
     if (inpaintMaskMod) {
       await makeMaskAndSnapshot3("snapshot", true);
     } else {
@@ -148,12 +189,6 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
 
 document.getElementById("btnSendRef").addEventListener("click", async () => {
   try {
-    // const entry = await imgSnapshotAndSave_new("ref");
-    // console.log("saved to:", entry.nativePath);
-    // const b64 = await entryToBase64(entry);
-    // selectedRefIndex++;
-    // addRefItem("ref", b64);
-    // await pushRefToComfy(b64);
     const p1 = perfStart("SendRef perf");
     await sendRef();
     // await makeMaskAndSnapshot("ref", false, false);
@@ -203,11 +238,9 @@ document
 // document.getElementById("btnTest").addEventListener("click", async () => {
 //   try {
 //     const p1 = perfStart("btnTest");
-//     if (inpaintMaskMod) {
-//       await makeMaskAndSnapshot3("snapshot", true);
-//     } else {
-//       await makeMaskAndSnapshot3("snapshot", false);
-//     }
+//     await runAsSingleHistoryState("CMF2PS btnTest", async () => {
+//       await selectMask();
+//     });
 //     // await exportSnapshotMask();
 
 //     perfEnd(p1);
@@ -225,8 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnOpenSettings = document.getElementById("btnOpenSettings");
   const chkTwoLevelLayout = document.getElementById("chkTwoLevelLayout");
 
-  const SETTINGS_KEY = "cmf2ps_two_level_layout";
-
   function applyTwoLevelLayout(enabled) {
     if (!main) return;
 
@@ -236,21 +267,11 @@ document.addEventListener("DOMContentLoaded", () => {
       main.classList.remove("two-level-layout");
     }
 
-    try {
-      localStorage.setItem(SETTINGS_KEY, enabled ? "1" : "0");
-    } catch (e) {
-      console.log("Failed to save layout setting:", e);
-    }
+    saveSetting(SETTINGS_KEYS.twoLevelLayout, enabled ? "1" : "0");
   }
 
   function loadTwoLevelLayout() {
-    let enabled = false;
-
-    try {
-      enabled = localStorage.getItem(SETTINGS_KEY) === "1";
-    } catch (e) {
-      console.log("Failed to load layout setting:", e);
-    }
+    const enabled = loadSetting(SETTINGS_KEYS.twoLevelLayout) === "1";
 
     if (chkTwoLevelLayout) {
       chkTwoLevelLayout.checked = enabled;
@@ -298,12 +319,16 @@ function initAspectDropdown() {
     btn.classList.add("open");
   }
 
-  function setSelectedItem(item) {
+  function setSelectedItem(item, shouldSave = true) {
     items.forEach((el) => el.classList.remove("selected"));
     item.classList.add("selected");
 
     selectedAspect = item.dataset.value;
     label.textContent = item.textContent.trim();
+
+    if (shouldSave) {
+      saveSetting(SETTINGS_KEYS.selectedAspect, selectedAspect);
+    }
   }
 
   btn.addEventListener("click", (e) => {
@@ -331,9 +356,14 @@ function initAspectDropdown() {
     }
   });
 
-  const initial = menu.querySelector(".custom-select-item.selected");
+  // При старте выбираем последний пресет соотношения, если он есть в списке.
+  const savedAspect = loadSetting(SETTINGS_KEYS.selectedAspect);
+  const initial =
+    items.find((item) => item.dataset.value === savedAspect) ||
+    menu.querySelector(".custom-select-item.selected");
+
   if (initial) {
-    setSelectedItem(initial);
+    setSelectedItem(initial, false);
   }
 }
 
@@ -350,7 +380,26 @@ function initControls() {
   // const mask2PaddingLabel = document.getElementById("mask2PaddingValue");
 
   const chkApplyMask = document.getElementById("chkApplyMask");
-  chkApplyMask.checked = true;
+
+  // Восстанавливаем значения контролов из прошлой сессии до первого refresh UI.
+  bApplyMask = loadBooleanSetting(SETTINGS_KEYS.applyMask, bApplyMask);
+  chkApplyMask.checked = bApplyMask;
+
+  maskBlurValue = loadNumberSetting(
+    SETTINGS_KEYS.maskBlur,
+    maskBlurValue,
+    Number(maskBlurSlider.min),
+    Number(maskBlurSlider.max),
+  );
+  maskPaddingValue = loadNumberSetting(
+    SETTINGS_KEYS.maskPadding,
+    maskPaddingValue,
+    Number(maskPaddingSlider.min),
+    Number(maskPaddingSlider.max),
+  );
+
+  maskBlurSlider.value = String(maskBlurValue);
+  maskPaddingSlider.value = String(maskPaddingValue);
 
   // const chkInpaintMaskMod = document.getElementById("chkInpaintMaskMod");
   // chkInpaintMaskMod.checked = false;
@@ -388,17 +437,23 @@ function initControls() {
 
   chkApplyMask.addEventListener("change", (e) => {
     bApplyMask = e.target.checked;
+    // Сохраняем сразу при изменении, отдельная кнопка "Применить" не нужна.
+    saveSetting(SETTINGS_KEYS.applyMask, bApplyMask ? "1" : "0");
     console.log("autoApply:", bApplyMask);
   });
 
   maskBlurSlider.addEventListener("input", (e) => {
     maskBlurValue = parseFloat(e.target.value);
     refreshMaskBlur();
+    // input срабатывает при движении слайдера, поэтому последнее положение всегда запомнится.
+    saveSetting(SETTINGS_KEYS.maskBlur, maskBlurValue);
   });
 
   maskPaddingSlider.addEventListener("input", (e) => {
     maskPaddingValue = parseFloat(e.target.value);
     refreshMaskPadding();
+    // Паддинг восстанавливается вместе с остальными рабочими параметрами.
+    saveSetting(SETTINGS_KEYS.maskPadding, maskPaddingValue);
   });
 
   // mask2PaddingSlider.addEventListener("input", (e) => {
@@ -1105,7 +1160,7 @@ async function setPPI72() {
 
 ////////////////
 
- // Импорт макросов
+// Импорт макросов
 
 const {
   commandsMakeMaskMerge5p01,
@@ -1119,12 +1174,14 @@ const {
   commandsFixBackgroundMMAS3,
   commandsSetRGB,
   commandsMakeRef,
-  commandsSendBitmapToMask,
+  // commandsSendBitmapToMask,
   commandsMaskFromImage,
   commandApplyMask,
   commandSelDown,
   commandSelUp,
   commandDelLayer,
+  commandsSelectMask,
+  commandNewLayerTemp,
 } = require("./macros");
 
 async function restoreHistoryState(historyState) {
@@ -1476,18 +1533,6 @@ async function selectLayer() {
   });
 }
 
-let commandNewLayerTemp = [
-  // Сделать слой
-  {
-    _obj: "make",
-    _target: [
-      {
-        _ref: "layer",
-      },
-    ],
-  },
-];
-
 async function blurMask(vBlur) {
   let commands = [
     // Выделение маска канал
@@ -1539,165 +1584,10 @@ async function maskPaddingMinus(vPadding) {
   return await require("photoshop").action.batchPlay(commands, {});
 }
 
-async function maskFix() {
-  let commands = [
-    // Сделать слой-заливка
-    {
-      _obj: "make",
-      _target: [
-        {
-          _ref: "contentLayer",
-        },
-      ],
-      using: {
-        _obj: "contentLayer",
-        type: {
-          _obj: "solidColorLayer",
-          color: {
-            _obj: "RGBColor",
-            blue: 0.0,
-            grain: 0.0,
-            red: 0.0,
-          },
-        },
-      },
-    },
-    // Перемещение текущ. слой
-    {
-      _obj: "move",
-      _target: [
-        {
-          _enum: "ordinal",
-          _ref: "layer",
-          _value: "targetEnum",
-        },
-      ],
-      to: {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "previous",
-      },
-    },
-    // Выделение вперед слой
-    {
-      _obj: "select",
-      _target: [
-        {
-          _enum: "ordinal",
-          _ref: "layer",
-          _value: "forwardEnum",
-        },
-      ],
-      makeVisible: false,
-      selectionModifier: {
-        _enum: "selectionModifierType",
-        _value: "addToSelection",
-      },
-    },
-    // Объединить слои
-    {
-      _obj: "mergeLayersNew",
-    },
-  ];
-  return await require("photoshop").action.batchPlay(commands, {});
-}
-
-async function qSelectMask() {
-  let commands = [
-    // Сделать слой-заливка
-    {
-      _obj: "make",
-      _target: [
-        {
-          _ref: "contentLayer",
-        },
-      ],
-      using: {
-        _obj: "contentLayer",
-        type: {
-          _obj: "solidColorLayer",
-          color: {
-            _obj: "RGBColor",
-            blue: 0.0,
-            grain: 0.0,
-            red: 0.0,
-          },
-        },
-      },
-    },
-    // Перемещение текущ. слой
-    {
-      _obj: "move",
-      _target: [
-        {
-          _enum: "ordinal",
-          _ref: "layer",
-          _value: "targetEnum",
-        },
-      ],
-      to: {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "previous",
-      },
-    },
-    // Выделение вперед слой
-    {
-      _obj: "select",
-      _target: [
-        {
-          _enum: "ordinal",
-          _ref: "layer",
-          _value: "forwardEnum",
-        },
-      ],
-      makeVisible: false,
-      selectionModifier: {
-        _enum: "selectionModifierType",
-        _value: "addToSelection",
-      },
-    },
-    // Объединить слои
-    {
-      _obj: "mergeLayersNew",
-    },
-    // Цветовой диапазон
-    {
-      _obj: "colorRange",
-      colorModel: 0,
-      colors: {
-        _enum: "colors",
-        _value: "highlights",
-      },
-      highlightsFuzziness: 5,
-      highlightsLowerLimit: 125,
-    },
-  ];
-  return await require("photoshop").action.batchPlay(commands, {});
-}
-
-let commandsMoveUpLayer = [
-  // Перемещение текущ. слой
-  {
-    _obj: "move",
-    _target: [
-      {
-        _enum: "ordinal",
-        _ref: "layer",
-        _value: "targetEnum",
-      },
-    ],
-    to: {
-      _enum: "ordinal",
-      _ref: "layer",
-      _value: "next",
-    },
-  },
-];
-
 async function selectMask() {
   await require("photoshop").action.batchPlay(commandNewLayerTemp, {});
-  await require("photoshop").action.batchPlay(commandsSendBitmapToMask, {});
+  await require("photoshop").action.batchPlay(commandsMaskFromImage, {});
+  await require("photoshop").action.batchPlay(commandsSelectMask, {});
   await require("photoshop").action.batchPlay(commandDelLayer, {});
 }
 
@@ -1724,44 +1614,14 @@ async function applyMaskMacros() {
 }
 
 async function appendMask() {
-  // await require("photoshop").action.batchPlay(commandSelDown, {});
-  // await require("photoshop").action.batchPlay(commandsMoveUpLayer, {});
-  // await require("photoshop").core.executeAsModal(qSelectMask, {
-  //   commandName: "qSelectMask",
-  // });
-  // await require("photoshop").action.batchPlay(commandDelLayer, {});
-
   await require("photoshop").action.batchPlay(commandsMaskFromImage, {});
+  await require("photoshop").action.batchPlay(commandsSelectMask, {});
   await require("photoshop").action.batchPlay(commandSelDown, {});
   await require("photoshop").action.batchPlay(commandDelLayer, {});
   await require("photoshop").action.batchPlay(commandSelUp, {});
 
-  // await maskPaddingMinus(mask2PaddingValue);
-  // await applyMaskMacros();
-
   console.log("maskBlurValue", maskBlurValue);
   await blurMask(maskBlurValue);
-
-  // let commands = [
-  //   // Задать Выделение
-  //   {
-  //     _obj: "set",
-  //     _target: [
-  //       {
-  //         _property: "selection",
-  //         _ref: "channel",
-  //       },
-  //     ],
-  //     maskParameters: true,
-  //     to: {
-  //       _enum: "ordinal",
-  //       _ref: "channel",
-  //       _value: "targetEnum",
-  //     },
-  //   },
-  // ];
-
-  // await require("photoshop").action.batchPlay(commands, {});
 }
 
 async function delTempMask() {

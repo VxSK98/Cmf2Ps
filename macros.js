@@ -848,6 +848,37 @@ const commandDelLayer = [
   },
 ];
 
+
+const commandsSelectMask = [
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    to: {
+      _enum: "ordinal",
+      _ref: "channel",
+      _value: "targetEnum",
+    },
+  },
+];
+
+const commandNewLayerTemp = [
+  // Сделать слой
+  {
+    _obj: "make",
+    _target: [
+      {
+        _ref: "layer",
+      },
+    ],
+  },
+];
+
 module.exports = {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -860,10 +891,12 @@ module.exports = {
   commandsFixBackgroundMMAS3,
   commandsSetRGB,
   commandsMakeRef,
-  commandsSendBitmapToMask, //
+  // commandsSendBitmapToMask, //
   commandsMaskFromImage,
   commandApplyMask,
   commandSelDown,
   commandSelUp,
   commandDelLayer,
+  commandsSelectMask,
+  commandNewLayerTemp,
 };
