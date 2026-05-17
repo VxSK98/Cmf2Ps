@@ -34,7 +34,7 @@ class CMF2PS_SendToPhotoshop(SaveImage):
     def __init__(self):
         self.output_dir = folder_paths.get_temp_directory()
         self.type = "temp"
-        self.prefix_append = "_cmf2ps_"
+        self.prefix_append = "_cmf2ps"
         self.compress_level = 4
 
     @classmethod
@@ -101,7 +101,7 @@ class CMF2PS_LoadImage:
         }
 
     RETURN_TYPES = ("IMAGE", "MASK", "INT", "INT")
-    RETURN_NAMES = ("изображение", "маска", "ширина", "высота")
+    RETURN_NAMES = ("image", "mask", "width", "height")
     FUNCTION = "load"
     CATEGORY = "CMF2PS"
 
@@ -162,7 +162,7 @@ class CMF2PS_LoadRef:
         }
 
     RETURN_TYPES = ("IMAGE", "INT", "INT")
-    RETURN_NAMES = ("изображение", "ширина", "высота")
+    RETURN_NAMES = ("image", "width", "height")
     FUNCTION = "load"
     CATEGORY = "CMF2PS"
 
@@ -213,7 +213,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CMF2PS_SendToPhotoshop": "Отправит в фотошоп (CMF2PS)",
-    "CMF2PS_LoadImage": "Загрузка снапшота (CMF2PS)",
-    "CMF2PS_LoadRef": "Загрузка рефа (CMF2PS)",
+    "CMF2PS_SendToPhotoshop": "Send to Photoshop",
+    "CMF2PS_LoadImage": "Load Snapshot",
+    "CMF2PS_LoadRef": "Load Reference",
 }

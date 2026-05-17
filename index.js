@@ -37,8 +37,6 @@ let maskPaddingValue = 8;
 
 let selectedAspect = "1024x1024";
 
-
-
 /////////////////////// Функции сохранения параметров
 
 // Ключи настроек в localStorage. Значения переживают закрытие панели/Photoshop.
@@ -535,7 +533,7 @@ async function applySelectedPreview() {
     const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
-    await openImgInPS(imageMaskBytes, "cmf2ps_output_mask.png");
+    await openImgInPS(imageMaskBytes, item.filename + "_mask");
     await centerActiveLayer();
     await resetTransform();
     // await require("photoshop").core.executeAsModal(qSelectMask, {
@@ -549,7 +547,7 @@ async function applySelectedPreview() {
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
     const imageOutputBytes = base64ToUint8Array(item.data);
-    await openImgInPS2(imageOutputBytes, "cmf2ps_output.png");
+    await openImgInPS2(imageOutputBytes, item.filename);
     await resetTransform();
     perfEnd(p3);
     const p4 = perfStart("применить маску");
@@ -579,7 +577,7 @@ async function addPreviewLayer() {
     const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
-    await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask.png");
+    await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask");
     await centerActiveLayer();
 
     await resetTransform();
@@ -1802,6 +1800,7 @@ function renderPreviewList() {
 
       wrap.addEventListener("click", async () => {
         selectedPreviewIndex = index;
+        // console.log("item.filename", item.filename);
         await addPreviewLayer();
         renderPreviewList();
       });
@@ -1844,7 +1843,6 @@ function renderRefList() {
     const img = document.createElement("img");
     img.className = "preview-thumb";
     img.src = `data:image/png;base64,${item.data}`;
-    console.log("Ref test");
     wrap.appendChild(img);
 
     wrap.addEventListener("click", async () => {

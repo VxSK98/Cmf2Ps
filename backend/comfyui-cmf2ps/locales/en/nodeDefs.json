@@ -1,0 +1,65 @@
+{
+  "CMF2PS_SendToPhotoshop": {
+    "display_name": "Send to Photoshop (CMF2PS)",
+    "inputs": {
+      "images": {
+        "name": "image",
+        "tooltip": "Image to send to Photoshop"
+      },
+      "filename_prefix": {
+        "name": "prefix",
+        "tooltip": "Prefix for the saved PNG before sending it to Photoshop"
+      }
+    }
+  },
+  "CMF2PS_LoadImage": {
+    "display_name": "Load Snapshot (CMF2PS)",
+    "inputs": {
+      "client_id": {
+        "name": "client ID",
+        "tooltip": "Photoshop client identifier to read the latest snapshot and mask from"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": "Latest snapshot received from Photoshop"
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": "Latest inpaint mask received from Photoshop"
+      },
+      "2": {
+        "name": "width",
+        "tooltip": "Snapshot width rounded down to a multiple of 8"
+      },
+      "3": {
+        "name": "height",
+        "tooltip": "Snapshot height rounded down to a multiple of 8"
+      }
+    }
+  },
+  "CMF2PS_LoadRef": {
+    "display_name": "Load Reference (CMF2PS)",
+    "inputs": {
+      "client_id": {
+        "name": "client ID",
+        "tooltip": "Photoshop client identifier to read the latest reference image from"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": "Latest reference image received from Photoshop"
+      },
+      "1": {
+        "name": "width",
+        "tooltip": "Reference image width rounded down to a multiple of 8"
+      },
+      "2": {
+        "name": "height",
+        "tooltip": "Reference image height rounded down to a multiple of 8"
+      }
+    }
+  }
+}
