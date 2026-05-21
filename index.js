@@ -24,6 +24,7 @@ let selectedPreviewIndex = -1;
 let selectedRefIndex = -1;
 
 let bApplyMask = true;
+let bResizeLayer = false;
 
 let inpaintMaskMod = false;
 
@@ -46,6 +47,7 @@ const SETTINGS_KEYS = {
   maskBlur: "cmf2ps_mask_blur",
   selectedAspect: "cmf2ps_selected_aspect",
   applyMask: "cmf2ps_apply_mask",
+  resizeLayer: "cmf2ps_resize_layer",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -378,10 +380,14 @@ function initControls() {
   // const mask2PaddingLabel = document.getElementById("mask2PaddingValue");
 
   const chkApplyMask = document.getElementById("chkApplyMask");
+  const chkResizeLayer = document.getElementById("chkResizeLayer");
 
   // Восстанавливаем значения контролов из прошлой сессии до первого refresh UI.
   bApplyMask = loadBooleanSetting(SETTINGS_KEYS.applyMask, bApplyMask);
   chkApplyMask.checked = bApplyMask;
+
+  bResizeLayer = loadBooleanSetting(SETTINGS_KEYS.resizeLayer, bResizeLayer);
+  chkResizeLayer.checked = bResizeLayer;
 
   maskBlurValue = loadNumberSetting(
     SETTINGS_KEYS.maskBlur,
@@ -438,6 +444,13 @@ function initControls() {
     // Сохраняем сразу при изменении, отдельная кнопка "Применить" не нужна.
     saveSetting(SETTINGS_KEYS.applyMask, bApplyMask ? "1" : "0");
     console.log("autoApply:", bApplyMask);
+  });
+
+  chkResizeLayer.addEventListener("change", (e) => {
+    bResizeLayer = e.target.checked;
+    // Сохраняем сразу при изменении, отдельная кнопка "Применить" не нужна.
+    saveSetting(SETTINGS_KEYS.resizeLayer, bResizeLayer ? "1" : "0");
+    console.log("bResizeLayer:", bResizeLayer);
   });
 
   maskBlurSlider.addEventListener("input", (e) => {
@@ -534,8 +547,8 @@ async function applySelectedPreview() {
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
     await openImgInPS(imageMaskBytes, item.filename + "_mask");
-    await centerActiveLayer();
     await resetTransform();
+    await centerActiveLayer();
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
@@ -547,8 +560,26 @@ async function applySelectedPreview() {
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
     const imageOutputBytes = base64ToUint8Array(item.data);
-    await openImgInPS2(imageOutputBytes, item.filename);
-    await resetTransform();
+    await openImgInPS2(
+      imageOutputBytes,
+      item.filename,
+      item.width,
+      item.height,
+    );
+    if (
+      snapshotSize.width == item.width &&
+      snapshotSize.height == item.height
+    ) {
+      await resetTransform();
+    }
+    // if (
+    //   snapshotSize.width != item.width &&
+    //   snapshotSize.height != item.height
+    // ) {
+    //   await correntResize(item.width, item.height);
+    // } else {
+    //   await resetTransform();
+    // }
     perfEnd(p3);
     const p4 = perfStart("применить маску");
     await applyMaskInCurrentModal();
@@ -578,9 +609,8 @@ async function addPreviewLayer() {
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
     await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask");
-    await centerActiveLayer();
-
     await resetTransform();
+    await centerActiveLayer();
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
@@ -594,9 +624,18 @@ async function addPreviewLayer() {
     const p3 = perfStart("импорт bitmap");
     const imageOutputBytes = base64ToUint8Array(item.data);
     // await openImgInPS(imageMaskBytes, "cmf2ps_preview.png");
-    await openImgInPS2(imageOutputBytes, "cmf2ps_preview.png");
-
-    await resetTransform();
+    await openImgInPS2(
+      imageOutputBytes,
+      "cmf2ps_preview.png",
+      item.width,
+      item.height,
+    );
+    if (
+      snapshotSize.width == item.width &&
+      snapshotSize.height == item.height
+    ) {
+      await resetTransform();
+    }
     perfEnd(p3);
     const p4 = perfStart("применить маску");
     await applyMaskInCurrentModal();
@@ -640,6 +679,11 @@ async function centerActiveLayer() {
   // смещение
   const offsetX = docCenterX - layerCenterX;
   const offsetY = docCenterY - layerCenterY;
+
+  console.log("layerCenterX", layerCenterX);
+  console.log("layerCenterY", layerCenterY);
+  console.log("offsetX", offsetX);
+  console.log("offsetY", offsetY);
 
   await layer.translate(offsetX, offsetY);
 }
@@ -1669,7 +1713,7 @@ function getSelectionCenter() {
 }
 
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
-async function openImgInPS2(bytes, nameLayer) {
+async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const file = await writeTempPng(bytes, nameLayer);
   const targetDoc = app.activeDocument;
   const docPPI = app.activeDocument.resolution;
@@ -1685,6 +1729,12 @@ async function openImgInPS2(bytes, nameLayer) {
     docH / snapshotSize.height,
   );
   const correction = ((1 / autoFit) * 100) / ppiFactor;
+  let correctionWidth = correction;
+  let correctionHeight = correction;
+  if (snapshotSize.width != imgWidth && snapshotSize.height != imgHeight && bResizeLayer == true) {
+    correctionWidth = correction * (snapshotSize.width / imgWidth);
+    correctionHeight = correction * (snapshotSize.height / imgHeight);
+  }
 
   console.log("[CMF2PS] imgPPI", imgPPI);
   console.log("[CMF2PS] docPPI", docPPI);
@@ -1692,7 +1742,8 @@ async function openImgInPS2(bytes, nameLayer) {
   console.log("[CMF2PS] docSize", { width: docW, height: docH });
   console.log("[CMF2PS] selection", sel);
   console.log("[CMF2PS] autoFit", autoFit);
-  console.log("[CMF2PS] correction", correction);
+  console.log("[CMF2PS] correctionWidth", correctionWidth);
+  console.log("[CMF2PS] correctionHeight", correctionHeight);
 
   const token = await fs.createSessionToken(file);
 
@@ -1711,11 +1762,11 @@ async function openImgInPS2(bytes, nameLayer) {
         },
         width: {
           _unit: "percentUnit",
-          _value: correction,
+          _value: correctionWidth,
         },
         height: {
           _unit: "percentUnit",
-          _value: correction,
+          _value: correctionHeight,
         },
         _options: {
           dialogOptions: "dontDisplay",
@@ -1758,8 +1809,8 @@ async function openImgInPS(bytes, nameLayer) {
 
 ///////// Функции для превью:
 
-function addPreviewItem(filename, data) {
-  previewItems.push({ filename, data });
+function addPreviewItem(filename, data, width, height) {
+  previewItems.push({ filename, data, width, height });
 
   if (selectedPreviewIndex === -1) {
     selectedPreviewIndex = 0;
@@ -1985,9 +2036,10 @@ async function handleWsMessage(msg) {
     //
     // selectedPreviewIndex++;
     if (bSnapshot == true) {
-      addPreviewItem(msg.filename, msg.data);
+      addPreviewItem(msg.filename, msg.data, msg.width, msg.height);
 
-      // console.log("msg.filename", msg.filename);
+      console.log("msg.width", msg.width);
+      console.log("msg.height", msg.height);
       // console.log("msg.data", msg.data);
       if (firstRender == true) {
         console.log("firstRender");

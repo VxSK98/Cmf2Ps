@@ -848,7 +848,6 @@ const commandDelLayer = [
   },
 ];
 
-
 const commandsSelectMask = [
   // Задать Выделение
   {

@@ -53,15 +53,32 @@ class CMF2PS_SendToPhotoshop(SaveImage):
     OUTPUT_NODE = True
     CATEGORY = "CMF2PS"
 
-    async def _send_all(self, filenames):
-        for filename in filenames:
-            await cmf2ps_backend.send_preview_image(filename)
+    async def _send_all(self, image_items):
+        for item in image_items:
+            await cmf2ps_backend.send_preview_image(
+                item["filename"],
+                width=item.get("width"),
+                height=item.get("height"),
+            )
         await cmf2ps_backend.send_preview_done()
 
     def execute(self, images, filename_prefix="CMF2PS", prompt=None, extra_pnginfo=None):
         result = self.save_images(images, filename_prefix, prompt, extra_pnginfo)
-        filenames = [item["filename"] for item in result["ui"]["images"]]
-        _fire_and_forget(self._send_all(filenames))
+        saved_images = result["ui"]["images"]
+        image_items = []
+
+        for index, item in enumerate(saved_images):
+            image_info = {"filename": item["filename"]}
+
+            if index < len(images):
+                image = images[index]
+                if len(image.shape) >= 2:
+                    image_info["height"] = int(image.shape[0])
+                    image_info["width"] = int(image.shape[1])
+
+            image_items.append(image_info)
+
+        _fire_and_forget(self._send_all(image_items))
         return result
 
 def _load_rgb_image(path: str):

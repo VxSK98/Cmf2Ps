@@ -7,6 +7,7 @@ import time
 import json
 import base64
 import asyncio
+import struct
 from typing import Optional, Dict, Any, Tuple, List
 
 from aiohttp import web
@@ -39,6 +40,13 @@ def _temp_file_path(filename: str) -> str:
     """ComfyUI temp dir + защита от ../ path traversal."""
     safe_name = os.path.basename(filename)
     return os.path.join(folder_paths.get_temp_directory(), safe_name)
+
+
+def _png_size(raw: bytes) -> Optional[Tuple[int, int]]:
+    if len(raw) < 24 or raw[:8] != b"\x89PNG\r\n\x1a\n" or raw[12:16] != b"IHDR":
+        return None
+
+    return struct.unpack(">II", raw[16:24])
 
 
 async def _clients_snapshot() -> List[Tuple[str, Dict[str, Any]]]:
@@ -117,7 +125,7 @@ def _client_image_path(client_id: str) -> str:
     safe_client = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in client_id)
     return os.path.join(_INBOX_DIR, f"{safe_client}.png")
 
-async def send_preview_image(filename: str) -> dict:
+async def send_preview_image(filename: str, width: Optional[int] = None, height: Optional[int] = None) -> dict:
     """
     Читает PNG из temp ComfyUI, кодирует в base64 и отправляет.
     По умолчанию — только активному Photoshop-клиенту (platform=ps).
@@ -135,16 +143,24 @@ async def send_preview_image(filename: str) -> dict:
         with open(path, "rb") as f:
             raw = f.read()
 
+        if width is None or height is None:
+            size = _png_size(raw)
+            if size:
+                width, height = size
+
         b64 = base64.b64encode(raw).decode("utf-8")
         payload = {"type": "preview_item", "source": "cmf2ps", "filename": base_name, "data": b64}
+        if width is not None and height is not None:
+            payload["width"] = int(width)
+            payload["height"] = int(height)
 
         target = await wait_for_active_ps_client(timeout=5.0)
         if target:
             ok = await send_to_client(target, payload)
-            return {"ok": ok, "target": target, "filename": base_name}
+            return {"ok": ok, "target": target, "filename": base_name, "width": width, "height": height}
 
         delivered = await broadcast(payload, platform="ps")
-        return {"ok": delivered > 0, "delivered": delivered, "filename": base_name}
+        return {"ok": delivered > 0, "delivered": delivered, "filename": base_name, "width": width, "height": height}
 
     except Exception as e:
         payload = {
