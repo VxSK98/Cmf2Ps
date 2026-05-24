@@ -1712,6 +1712,43 @@ function getSelectionCenter() {
   };
 }
 
+async function getResizeDuringPlace() {
+  const [prefs] = await action.batchPlay(
+    [
+      {
+        _obj: "get",
+        _target: [
+          { _property: "generalPreferences" },
+          { _ref: "application", _enum: "ordinal", _value: "targetEnum" },
+        ],
+      },
+    ],
+    { synchronousExecution: true, modalBehavior: "execute" },
+  );
+  return !!(
+    prefs.resizePastePlace ?? prefs.generalPreferences?.resizePastePlace
+  );
+}
+
+async function setResizeDuringPlace(enabled) {
+  await action.batchPlay(
+    [
+      {
+        _obj: "set",
+        _target: [
+          { _property: "generalPreferences" },
+          { _ref: "application", _enum: "ordinal", _value: "targetEnum" },
+        ],
+        to: {
+          _obj: "generalPreferences",
+          resizePastePlace: !!enabled,
+        },
+      },
+    ],
+    { synchronousExecution: true, modalBehavior: "execute" },
+  );
+}
+
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
 async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const file = await writeTempPng(bytes, nameLayer);
@@ -1731,13 +1768,22 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const correction = ((1 / autoFit) * 100) / ppiFactor;
   let correctionWidth = correction;
   let correctionHeight = correction;
-  if (snapshotSize.width != imgWidth && snapshotSize.height != imgHeight && bResizeLayer == true) {
+  if (
+    snapshotSize.width != imgWidth &&
+    snapshotSize.height != imgHeight &&
+    bResizeLayer == true
+  ) {
     correctionWidth = correction * (snapshotSize.width / imgWidth);
     correctionHeight = correction * (snapshotSize.height / imgHeight);
   }
 
+  const prevResizeDuringPlace = await getResizeDuringPlace();
+  await setResizeDuringPlace(false);
+
   console.log("[CMF2PS] imgPPI", imgPPI);
   console.log("[CMF2PS] docPPI", docPPI);
+  // console.log("[CMF2PS] imgWidth", imgWidth);
+  // console.log("[CMF2PS] imgHeight", imgHeight);
   console.log("[CMF2PS] snapshotSize", snapshotSize);
   console.log("[CMF2PS] docSize", { width: docW, height: docH });
   console.log("[CMF2PS] selection", sel);
@@ -1778,7 +1824,7 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
       modalBehavior: "execute",
     },
   );
-
+  setResizeDuringPlace(prevResizeDuringPlace);
   console.log("[CMF2PS] placeEvent result", res);
 }
 
