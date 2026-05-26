@@ -224,6 +224,10 @@
       padding-top: 6px;
     }
 
+    .ref-file-field {
+      width: 100%;
+    }
+
     .slider-icon {
       width: 24px;
       height: 24px;
@@ -642,7 +646,9 @@
                   value="8"
                 />
               </div>
-              <sp-checkbox id="chkResizeLayer">Масштабирование слоя</sp-checkbox>
+              <sp-checkbox id="chkResizeLayer"
+                >Масштабирование слоя</sp-checkbox
+              >
             </div>
           </div>
 
@@ -702,7 +708,7 @@
         </div>
 
         <div class="ref-frame">
-          <div class="toolbar-label">Реф-нода</div>
+          <div class="toolbar-label">Реф-нода:</div>
           <div id="previewRef" class="preview-ref"></div>
           <div class="main-action-row">
             <sp-action-button id="btnSendRef" class="main-action"
@@ -720,6 +726,38 @@
                 data-theme-icon="clear"
               />
             </sp-action-button>
+          </div>
+          <div class="padding-down"></div>
+          <div class="toolbar-label">Реф-папка:</div>
+          <div class="main-action-row">
+          <sp-textfield
+            id="refFolderFilename"
+            class="ref-file-field"
+            title="Название файла"
+            placeholder="Название файла.png"
+          ></sp-textfield>
+          <!-- <div class="padding-down"></div>
+          <div class="toolbar-label">название файла</div> -->
+          </div>
+          <div class="padding-down"></div>
+          <div class="main-action-row">
+            <sp-action-button
+              id="btnSendRefInFolder"
+              class="main-action"
+              title="Отправить выделенную область или документ в папку ComfyUI\input"
+              >Отправить</sp-action-button
+            >
+            <div class="padding-down"></div>
+            <sp-action-button
+              id="btnDelRefInFolder"
+              class="settings-toggle-btn"
+              title="Удалить файл по имени в папке ComfyUI\input"
+            >
+              <img
+                src="images/cmf2ps_trashBox_light@2x.png"
+                class="icon-btn-settings"
+                data-theme-icon="trash"
+            /></sp-action-button>
           </div>
         </div>
         <div class="preview-frame preview-frame-compact" id="previewCompact">
@@ -803,7 +841,7 @@
         <div class="settings-section">
           <h3>О программе</h3>
           <div class="padding-down"></div>
-          <div class="settings-hint">Cmf2Ps ver 1.0.0.dev01(Beta)</div>
+          <div class="settings-hint">Cmf2Ps ver 1.0.0.dev02(Beta)</div>
           <div class="settings-hint">
             <a
               id="authorLink"

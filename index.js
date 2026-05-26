@@ -7,6 +7,8 @@ const formats = storage.formats;
 const WS_URL = "ws://127.0.0.1:8188/cmf2ps/ws?platform=ps";
 const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
 
+// http://127.0.0.1:8188/cmf2ps/clients  - адрес подключенных клиентов
+
 let ws = null;
 let isConnecting = false;
 // Очередь не дает async-обработчикам WebSocket накладываться друг на друга.
@@ -38,6 +40,10 @@ let maskPaddingValue = 8;
 
 let selectedAspect = "1024x1024";
 
+//
+
+const refFilename = "ref";
+
 /////////////////////// Функции сохранения параметров
 
 // Ключи настроек в localStorage. Значения переживают закрытие панели/Photoshop.
@@ -48,6 +54,7 @@ const SETTINGS_KEYS = {
   selectedAspect: "cmf2ps_selected_aspect",
   applyMask: "cmf2ps_apply_mask",
   resizeLayer: "cmf2ps_resize_layer",
+  refFolderFilename: "cmf2ps_ref_folder_filename",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -67,6 +74,21 @@ function loadSetting(key) {
     console.log("Failed to load setting:", key, e);
     return null;
   }
+}
+
+function normalizePngFilename(value) {
+  const clean = String(value || "")
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "_");
+
+  if (!clean) return refFilename;
+  return /\.png$/i.test(clean) ? clean : `${clean.replace(/\.[^.]*$/, "")}.png`;
+}
+
+function getRefFolderFilename() {
+  const input = document.getElementById("refFolderFilename");
+  const filename = normalizePngFilename(input.value);
+  return filename;
 }
 
 // Читает число и ограничивает его диапазоном контрола, чтобы не применить битое значение.
@@ -131,12 +153,23 @@ function updateThemeIcons() {
   });
 }
 
+function updateThemeIcons2() {
+  const clearIconPath = isLightTheme()
+    ? "images/cmf2ps_trashBox_light@2x.png"
+    : "images/cmf2ps_trashBox_dark@2x.png";
+
+  document.querySelectorAll('img[data-theme-icon="trash"]').forEach((img) => {
+    img.src = clearIconPath;
+  });
+}
+
 function watchThemeChanges() {
   const tick = () => {
     const current = isLightTheme();
     if (current !== lastThemeIsLight) {
       lastThemeIsLight = current;
       updateThemeIcons();
+      updateThemeIcons2();
     }
   };
 
@@ -190,13 +223,48 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
 document.getElementById("btnSendRef").addEventListener("click", async () => {
   try {
     const p1 = perfStart("SendRef perf");
-    await sendRef();
-    // await makeMaskAndSnapshot("ref", false, false);
+    await sendRef("_cmf2ps/ref.png", true, "none");
     perfEnd(p1);
   } catch (err) {
     console.error("ComfyUI error:", err);
   }
 });
+
+document
+  .getElementById("btnSendRefInFolder")
+  .addEventListener("click", async () => {
+    try {
+      const p1 = perfStart("SendRef perf");
+      await sendRef(getRefFolderFilename(), false, "auto");
+      // const r = await fetch("http://127.0.0.1:8188/cmf2ps/refresh", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ target_client_id: UI_CLIENT_ID }),
+      // });
+      // const j = await r.json().catch(() => ({}));
+      perfEnd(p1);
+    } catch (err) {
+      console.error("ComfyUI error:", err);
+    }
+  });
+
+document
+  .getElementById("btnDelRefInFolder")
+  .addEventListener("click", async () => {
+    try {
+      const r = await fetch("http://127.0.0.1:8188/cmf2ps/del_ref", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_client_id: UI_CLIENT_ID,
+          delete_item: getRefFolderFilename(),
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+    } catch (err) {
+      console.error("ComfyUI error:", err);
+    }
+  });
 
 document.getElementById("btnClearRef").addEventListener("click", async () => {
   try {
@@ -381,8 +449,19 @@ function initControls() {
 
   const chkApplyMask = document.getElementById("chkApplyMask");
   const chkResizeLayer = document.getElementById("chkResizeLayer");
+  const refFolderFilenameInput = document.getElementById("refFolderFilename");
 
   // Восстанавливаем значения контролов из прошлой сессии до первого refresh UI.
+  if (refFolderFilenameInput) {
+    refFolderFilenameInput.value =
+      loadSetting(SETTINGS_KEYS.refFolderFilename) || refFilename;
+    refFolderFilenameInput.addEventListener("change", () => {
+      const filename = refFolderFilenameInput.value;
+      refFolderFilenameInput.value = filename;
+      saveSetting(SETTINGS_KEYS.refFolderFilename, filename);
+    });
+  }
+
   bApplyMask = loadBooleanSetting(SETTINGS_KEYS.applyMask, bApplyMask);
   chkApplyMask.checked = bApplyMask;
 
@@ -1317,7 +1396,7 @@ async function runAsSingleHistoryState(name, callback) {
   );
 }
 
-async function sendRef() {
+async function sendRef(sFilename, bAddRefItem, sRefresh) {
   return await core.executeAsModal(
     async () => {
       const folder = await fs.getDataFolder();
@@ -1338,9 +1417,11 @@ async function sendRef() {
       });
       await app.activeDocument.saveAs.png(entryImg, { compression: 5 }, true);
       const imgBase64 = await entryToBase64(entryImg);
-      selectedRefIndex++;
-      addRefItem("ref", imgBase64);
-      await pushRefToComfy(imgBase64);
+      if (bAddRefItem == true) {
+        selectedRefIndex++;
+        addRefItem("ref", imgBase64);
+      }
+      await pushRefToComfy(imgBase64, sFilename, sRefresh);
       console.log("saved to:", entryImg.nativePath);
       // perfEnd(p4);
       // 4) Возвращаем в исходное состояние
@@ -1946,7 +2027,7 @@ function renderRefList() {
       selectedRefIndex = index;
       renderRefList();
       let item = refItems[selectedRefIndex];
-      await pushRefToComfy(item.data);
+      await pushRefToComfy(item.data, "_cmf2ps/ref.png", "none");
     });
 
     list.appendChild(wrap);
@@ -2004,14 +2085,17 @@ async function pushInpaintMaskToComfy(b64) {
   return j;
 }
 
-async function pushRefToComfy(b64) {
+async function pushRefToComfy(b64, sFilename, sRefresh) {
   const r = await fetch("http://127.0.0.1:8188/cmf2ps/push_ref", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: "ps",
-      filename: "ref.png",
+      target_client_id: UI_CLIENT_ID,
+      filename: sFilename,
       png_base64: b64,
+      refresh_mode: sRefresh,
+      delete_item: false,
     }),
   });
   const j = await r.json().catch(() => ({}));

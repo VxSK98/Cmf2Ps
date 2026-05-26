@@ -4,8 +4,7 @@ import { app } from "../../../scripts/app.js";
   const params = new URLSearchParams(window.location.search);
   const clientId = params.get("cmf2ps_client") || "ui_default";
 
-  const WS_URL =
-    `ws://127.0.0.1:8188/cmf2ps/ws?platform=ui&client_id=${encodeURIComponent(clientId)}`;
+  const WS_URL = `ws://127.0.0.1:8188/cmf2ps/ws?platform=ui&client_id=${encodeURIComponent(clientId)}`;
 
   let ws = null;
   let reconnectTimer = null;
@@ -25,7 +24,11 @@ import { app } from "../../../scripts/app.js";
 
   function connectWs() {
     if (isConnecting) return;
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    if (
+      ws &&
+      (ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
@@ -56,6 +59,16 @@ import { app } from "../../../scripts/app.js";
         try {
           ws.send(JSON.stringify({ type: "pong" }));
         } catch {}
+        return;
+      }
+
+      if (msg?.type === "refresh_inputs") {
+        await app.refreshComboInNodes?.();
+        return;
+      }
+
+      if (msg?.type === "refresh_inputs_full") {
+        window.location.reload();
         return;
       }
 

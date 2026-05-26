@@ -42,6 +42,19 @@ def _temp_file_path(filename: str) -> str:
     return os.path.join(folder_paths.get_temp_directory(), safe_name)
 
 
+def _input_ref_path(filename: str) -> Tuple[str, str]:
+    safe_name = os.path.basename(str(filename).replace("\\", "/")) or "ref.png"
+    if not safe_name.lower().endswith(".png"):
+        safe_name = f"{os.path.splitext(safe_name)[0]}.png"
+
+    input_dir = os.path.abspath(folder_paths.get_input_directory())
+    path = os.path.abspath(os.path.join(input_dir, safe_name))
+    if os.path.commonpath([input_dir, path]) != input_dir:
+        raise ValueError("bad_filename")
+
+    return safe_name, os.path.normpath(path)
+
+
 def _png_size(raw: bytes) -> Optional[Tuple[int, int]]:
     if len(raw) < 24 or raw[:8] != b"\x89PNG\r\n\x1a\n" or raw[12:16] != b"IHDR":
         return None
@@ -57,7 +70,7 @@ async def _clients_snapshot() -> List[Tuple[str, Dict[str, Any]]]:
 async def broadcast(payload: dict, *, platform: Optional[str] = None) -> int:
     """
     Шлёт JSON всем подключенным WS-клиентам.
-    Если задан platform (например "ps" или "ui") — только клиентам этой платформы.
+    Если задан platform (например "ps" или "ui") - только клиентам этой платформы.
     Возвращает число успешно доставленных.
     """
     msg = json.dumps(payload, ensure_ascii=False)
@@ -377,20 +390,22 @@ async def cmf2ps_push_mask(request):
 
 """ Дубликат для отправки рефа """
 @PromptServer.instance.routes.post(f"{_ROUTE_PREFIX}/push_ref")
-async def cmf2ps_push_image(request):
+async def cmf2ps_push_ref(request):
     """
-    Photoshop -> Comfy: положить реф в input/_cmf2ps
-      POST /cmf2ps/push_image
+    Photoshop -> Comfy: положить реф в input/(filename)
       {
-        "client_id": "psui_...",
-        "filename": "ref.png",
+        "client_id": фотошоп,
+        "target_client_id": это comfy
+        "filename": "название.png",
         "png_base64": "...."  (можно с data:image/png;base64,)
+        "refresh_mode" : обновлять ли страничку или ноду
       }
     """
-    data = await request.json() if request.can_read_body else {}
+    data = await request.json() if request.can_read_body  else {}
     client_id = data.get("client_id", "ps")
     b64 = data.get("png_base64")
     filename = data.get("filename", "ref.png")
+    refresh_mode = data.get("refresh_mode", "none")
 
     if not b64:
         return web.json_response({"ok": False, "error": "missing_png_base64"}, status=400)
@@ -403,15 +418,22 @@ async def cmf2ps_push_image(request):
     except Exception as e:
         return web.json_response({"ok": False, "error": "bad_base64", "details": str(e)}, status=400)
 
-    safe_name = os.path.basename(filename)
-    path = os.path.join(_INBOX_DIR, safe_name)
-    client_path = _client_image_path("ref")
+    try:
+        safe_name, client_path = _input_ref_path(filename)
+    except ValueError:
+        return web.json_response({"ok": False, "error": "bad_filename"}, status=400)
 
-    with open(path, "wb") as f:
-        f.write(raw)
+    file_existed = os.path.exists(client_path)
 
     with open(client_path, "wb") as f:
         f.write(raw)
+
+    target = data.get("target_client_id")
+    if refresh_mode == "auto":
+        if file_existed:
+            await send_to_client(target, {"type": "refresh_inputs_full"})
+        else:
+            await send_to_client(target, {"type": "refresh_inputs"})
 
     _last_ref_path[client_id] = client_path
 
@@ -421,3 +443,54 @@ async def cmf2ps_push_image(request):
         "path": client_path,
         "bytes": len(raw)
     })
+
+@PromptServer.instance.routes.post(f"{_ROUTE_PREFIX}/refresh")
+async def cmf2ps_refresh(request):
+    data = await request.json() if request.can_read_body else {}
+    target = data.get("target_client_id")
+    print (target)
+    ok = await send_to_client(target, {"type": "refresh_inputs", "source": "cmf2ps"})
+    return web.json_response({"ok": ok, "target": target})
+
+@PromptServer.instance.routes.post(f"{_ROUTE_PREFIX}/del_ref")
+async def cmf2ps_del_ref(request):
+    data = await request.json() if request.can_read_body else {}
+    target = data.get("target_client_id")
+    filename = data.get("filename") or data.get("delete_item")
+
+    if not filename:
+        return web.json_response({"ok": False, "error": "missing_filename"}, status=400)
+
+    try:
+        safe_name, path = _input_ref_path(filename)
+    except ValueError:
+        return web.json_response({"ok": False, "error": "bad_filename"}, status=400)
+
+    if not os.path.exists(path):
+        return web.json_response({
+            "ok": False,
+            "error": "file_not_found",
+            "filename": safe_name,
+            "path": path,
+        }, status=404)
+
+    try:
+        os.remove(path)
+    except Exception as e:
+        return web.json_response({
+            "ok": False,
+            "error": "delete_failed",
+            "details": str(e),
+            "filename": safe_name,
+            "path": path,
+        }, status=500)
+
+    ok = await send_to_client(target, {"type": "refresh_inputs_full"})
+    return web.json_response({
+        "ok": True,
+        "refresh_sent": ok,
+        "target": target,
+        "filename": safe_name,
+        "path": path,
+    })
+
