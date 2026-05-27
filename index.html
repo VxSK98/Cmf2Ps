@@ -1,6 +1,8 @@
 <!doctype html>
 <html>
   <head>
+    <script src="locales/ru.js"></script>
+    <script src="locales/en.js"></script>
     <script src="index.js"></script>
   </head>
   <style>
@@ -462,6 +464,19 @@
       line-height: 1.35;
     }
 
+    .backend-path-field {
+      width: 100%;
+    }
+
+    .locale-select {
+      width: 100%;
+      height: 28px;
+      box-sizing: border-box;
+      background: var(--uxp-host-background-color);
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      border: 1px solid #666;
+    }
+
     .settings-dialog a {
       color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
       text-decoration: underline;
@@ -509,6 +524,8 @@
             <sp-action-button
               id="btnSetSelect"
               class="main-action"
+              data-i18n="actions.setSelection"
+              data-i18n-title="titles.setSelection"
               title="Выделить прямоугольник по заготовленным пресетам. Либо в центре документа, либо по центру текущей выделенной области или слоя"
               >Задать выделение</sp-action-button
             >
@@ -516,6 +533,7 @@
             <sp-action-button
               id="btnSelectInCenter"
               class="icon-toggle-btn"
+              data-i18n-title="titles.selectInDocumentCenter"
               title="Выделение по центру документа"
               selected
             >
@@ -524,7 +542,9 @@
           </div>
           <div class="padding-down"></div>
           <div class="mask-frame">
-            <span class="toolbar-label">Соотношение:</span>
+            <span class="toolbar-label" data-i18n="labels.aspect"
+              >Соотношение:</span
+            >
             <div class="main-action-row">
               <div id="aspectDropdown" class="custom-select">
                 <button
@@ -537,7 +557,12 @@
                 </button>
 
                 <div id="aspectDropdownMenu" class="custom-select-menu hidden">
-                  <div class="custom-select-group-title">База</div>
+                  <div
+                    class="custom-select-group-title"
+                    data-i18n="labels.base"
+                  >
+                    База
+                  </div>
 
                   <div class="custom-select-item selected" data-value="512x512">
                     (1:1) - 512×512
@@ -611,6 +636,8 @@
             <sp-action-button
               id="btnSnapshot"
               checked
+              data-i18n="actions.generate"
+              data-i18n-title="titles.generate"
               title="Отправить выделение в comfy и запустить генерацию"
               class="main-action"
             >
@@ -630,7 +657,9 @@
           <div class="padding-down"></div>
           <div class="toolbar-padding">
             <div class="padding-8px">
-              <span class="toolbar-label">Паддинг слоя +</span>
+              <span class="toolbar-label" data-i18n="labels.layerPadding"
+                >Паддинг слоя +</span
+              >
               <div class="slider-inline">
                 <img
                   src="images/cmf2ps_maskPadding@2x.png"
@@ -646,7 +675,7 @@
                   value="8"
                 />
               </div>
-              <sp-checkbox id="chkResizeLayer"
+              <sp-checkbox id="chkResizeLayer" data-i18n="labels.resizeLayer"
                 >Масштабирование слоя</sp-checkbox
               >
             </div>
@@ -658,8 +687,12 @@
           > -->
           <div class="mask-frame">
             <div class="toolbar-row">
-              <sp-checkbox id="chkApplyMask">Маскировать слой</sp-checkbox>
-              <span class="toolbar-label">Растушевка</span>
+              <sp-checkbox id="chkApplyMask" data-i18n="labels.applyMask"
+                >Маскировать слой</sp-checkbox
+              >
+              <span class="toolbar-label" data-i18n="labels.feather"
+                >Растушевка</span
+              >
 
               <div class="slider-inline">
                 <img src="images/cmf2ps_maskBlur@2x.png" class="slider-icon" />
@@ -699,6 +732,8 @@
               <div class="padding-8px"></div>
               <sp-action-button
                 id="btnInpaintMaskMod"
+                data-i18n="actions.inpaintMaskMode"
+                data-i18n-title="titles.inpaintMaskMode"
                 title="Включить или выключить режим InpaintMask - рисование дополнительной маски для непосредственной участии в генерации в поддерживаемых моделях"
                 >Режим InpaintMask</sp-action-button
               >
@@ -708,16 +743,20 @@
         </div>
 
         <div class="ref-frame">
-          <div class="toolbar-label">Реф-нода:</div>
+          <div class="toolbar-label" data-i18n="labels.refNode">Реф-нода:</div>
           <div id="previewRef" class="preview-ref"></div>
           <div class="main-action-row">
-            <sp-action-button id="btnSendRef" class="main-action"
+            <sp-action-button
+              id="btnSendRef"
+              class="main-action"
+              data-i18n="actions.addRef"
               >Добавить реф</sp-action-button
             >
             <div class="padding-down"></div>
             <sp-action-button
               id="btnClearRef"
               class="settings-toggle-btn"
+              data-i18n-title="titles.clearPreview"
               title="Очистить превью"
             >
               <img
@@ -728,15 +767,19 @@
             </sp-action-button>
           </div>
           <div class="padding-down"></div>
-          <div class="toolbar-label">Реф-папка:</div>
+          <div class="toolbar-label" data-i18n="labels.refFolder">
+            Реф-папка:
+          </div>
           <div class="main-action-row">
-          <sp-textfield
-            id="refFolderFilename"
-            class="ref-file-field"
-            title="Название файла"
-            placeholder="Название файла.png"
-          ></sp-textfield>
-          <!-- <div class="padding-down"></div>
+            <sp-textfield
+              id="refFolderFilename"
+              class="ref-file-field"
+              data-i18n-title="titles.refFilename"
+              data-i18n-placeholder="placeholders.refFilename"
+              title="Название файла"
+              placeholder="Название файла.png"
+            ></sp-textfield>
+            <!-- <div class="padding-down"></div>
           <div class="toolbar-label">название файла</div> -->
           </div>
           <div class="padding-down"></div>
@@ -744,6 +787,8 @@
             <sp-action-button
               id="btnSendRefInFolder"
               class="main-action"
+              data-i18n="actions.send"
+              data-i18n-title="titles.sendRefToFolder"
               title="Отправить выделенную область или документ в папку ComfyUI\input"
               >Отправить</sp-action-button
             >
@@ -751,6 +796,7 @@
             <sp-action-button
               id="btnDelRefInFolder"
               class="settings-toggle-btn"
+              data-i18n-title="titles.deleteRefFromFolder"
               title="Удалить файл по имени в папке ComfyUI\input"
             >
               <img
@@ -762,17 +808,24 @@
         </div>
         <div class="preview-frame preview-frame-compact" id="previewCompact">
           <div class="padding-down"></div>
-          <div class="toolbar-label">Окно предпросмотра</div>
+          <div class="toolbar-label" data-i18n="labels.previewWindow">
+            Окно предпросмотра
+          </div>
           <div class="preview-actions">
             <div id="previewListCompact" class="preview-list"></div>
             <div class="main-action-row">
-              <sp-action-button id="btnApplyPreviewCompact" class="main-action">
+              <sp-action-button
+                id="btnApplyPreviewCompact"
+                class="main-action"
+                data-i18n="actions.applySelected"
+              >
                 Применить выбранное
               </sp-action-button>
               <div class="padding-down"></div>
               <sp-action-button
                 id="btnClearPreviewCompact"
                 class="settings-toggle-btn"
+                data-i18n-title="titles.clearPreview"
                 title="Очистить превью"
               >
                 <img
@@ -788,6 +841,7 @@
         <sp-action-button
           id="btnOpenSettings"
           class="settings-toggle-btn"
+          data-i18n-title="titles.settings"
           title="Настройки"
         >
           <img src="images/cmf2ps_settings@2x.png" class="icon-btn-settings" />
@@ -796,17 +850,24 @@
       <div class="preview-column" id="previewColumn">
         <div class="preview-frame">
           <div class="padding-down"></div>
-          <div class="toolbar-label">Окно предпросмотра</div>
+          <div class="toolbar-label" data-i18n="labels.previewWindow">
+            Окно предпросмотра
+          </div>
           <div class="preview-actions">
             <div id="previewList" class="preview-list"></div>
             <div class="main-action-row">
-              <sp-action-button id="btnApplyPreview" class="main-action">
+              <sp-action-button
+                id="btnApplyPreview"
+                class="main-action"
+                data-i18n="actions.applySelected"
+              >
                 Применить выбранное
               </sp-action-button>
               <div class="padding-down"></div>
               <sp-action-button
                 id="btnClearPreview"
                 class="settings-toggle-btn"
+                data-i18n-title="titles.clearPreview"
                 title="Очистить превью"
               >
                 <img
@@ -824,31 +885,80 @@
       </div>
     </div>
   </body>
+  <!-- Всплывающее окно настроек -->
   <dialog id="settingsDialog">
     <form method="dialog" class="settings-dialog">
       <div class="settings-section">
         <div class="mask-frame">
-          <h3>Интерфейс</h3>
-          <sp-checkbox id="chkTwoLevelLayout">
+          <div class="main-action-row">
+            <sp-action-button
+              id="btnSetBackend"
+              class="settings-toggle-btn"
+              data-i18n-title="titles.browse"
+              title="Обзор"
+            >
+              <img
+                src="images/cmf2ps_folder@2x.png"
+                class="icon-btn-settings"
+              />
+            </sp-action-button>
+            <div class="padding-down"></div>
+            <sp-textfield
+              id="backendPathField"
+              class="backend-path-field"
+              readonly
+              data-i18n-placeholder="placeholders.backendPath"
+              placeholder="Папка custom_nodes не выбрана"
+            ></sp-textfield>
+          </div>
+          <div class="padding-down"></div>
+          <sp-action-button
+            id="btnBackendInstall"
+            class="main-action"
+            data-i18n="actions.installBackend"
+          >
+            Установить backend и ноды
+          </sp-action-button>
+        </div>
+        <div class="padding-down"></div>
+        <div class="mask-frame">
+          <h3 data-i18n="labels.interface">Интерфейс</h3>
+          <label
+            class="toolbar-label"
+            for="localeSelect"
+            data-i18n="labels.language"
+            >Язык</label
+          >
+          <div class="main-action-row">
+            <select id="localeSelect" class="locale-select">
+              <option value="ru" data-i18n="labels.languageRu">Русский</option>
+              <option value="en" data-i18n="labels.languageEn">
+                Английский
+              </option>
+            </select>
+            <div class="padding-down"></div>
+          </div>
+          <sp-checkbox id="chkTwoLevelLayout" data-i18n="labels.twoLevelLayout">
             Двухуровневый макет
           </sp-checkbox>
-          <div class="settings-hint">
+          <div class="settings-hint" data-i18n="hints.twoLevelLayout">
             Выносит окно предпросмотра в отдельную правую колонку.
           </div>
         </div>
-      </div>
-      <div class="mask-frame">
-        <div class="settings-section">
-          <h3>О программе</h3>
-          <div class="padding-down"></div>
-          <div class="settings-hint">Cmf2Ps ver 1.0.0.dev02(Beta)</div>
-          <div class="settings-hint">
-            <a
-              id="authorLink"
-              href="https://www.artstation.com/vxsk98"
-              target="_blank"
-              >https://www.artstation.com/vxsk98</a
-            >
+        <div class="padding-down"></div>
+        <div class="mask-frame">
+          <div class="settings-section">
+            <h3 data-i18n="labels.about">О программе</h3>
+            <div class="padding-down"></div>
+            <div class="settings-hint">Cmf2Ps ver 1.0.0.dev03(Beta)</div>
+            <div class="settings-hint">
+              <a
+                id="authorLink"
+                href="https://www.artstation.com/vxsk98"
+                target="_blank"
+                >https://www.artstation.com/vxsk98</a
+              >
+            </div>
           </div>
         </div>
       </div>

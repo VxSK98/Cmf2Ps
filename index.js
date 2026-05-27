@@ -42,7 +42,91 @@ let selectedAspect = "1024x1024";
 
 //
 
+/////////////////////// Настройки локализации
+
 const refFilename = "ref";
+const DEFAULT_LOCALE = "ru";
+let currentLocale = window.CMF2PS_LOCALE || DEFAULT_LOCALE;
+
+function t(key, fallback = "") {
+  const locale = window.CMF2PS_LOCALES?.[currentLocale] || {};
+  const value = key.split(".").reduce((obj, part) => obj?.[part], locale);
+
+  return typeof value === "string" ? value : fallback || key;
+}
+
+// Проходит по DOM и применяет переводы из data-i18n*, оставляя исходный текст fallback'ом.
+function applyI18n(root = document) {
+  root.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n, el.textContent.trim());
+  });
+
+  root.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const title = t(el.dataset.i18nTitle, el.getAttribute("title") || el.title);
+    el.title = title;
+    el.setAttribute("title", title);
+  });
+
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const placeholder = t(
+      el.dataset.i18nPlaceholder,
+      el.getAttribute("placeholder") || el.placeholder,
+    );
+    el.placeholder = placeholder;
+    el.setAttribute("placeholder", placeholder);
+  });
+
+  syncLocaleSelect();
+}
+
+// В UXP option.value/select.value могут вести себя нестабильно, поэтому читаем атрибут напрямую.
+function getOptionValue(option) {
+  return option.getAttribute("value") || option.value;
+}
+
+// Текущий выбор берем через selectedIndex, а не через select.value: так надежнее в UXP dialog.
+function getSelectedLocaleFromSelect(localeSelect) {
+  const selectedIndex = localeSelect.selectedIndex;
+  const selectedOption = localeSelect.options[selectedIndex];
+
+  return selectedOption ? getOptionValue(selectedOption) : null;
+}
+
+// Синхронизирует визуальный select с currentLocale несколькими способами для совместимости с UXP.
+function syncLocaleSelect() {
+  const localeSelect = document.getElementById("localeSelect");
+  if (!localeSelect) return;
+
+  Array.from(localeSelect.options).forEach((option, index) => {
+    const isSelected = getOptionValue(option) === currentLocale;
+    option.selected = isSelected;
+
+    if (isSelected) {
+      option.setAttribute("selected", "selected");
+      localeSelect.selectedIndex = index;
+    } else {
+      option.removeAttribute("selected");
+    }
+  });
+
+  localeSelect.value = currentLocale;
+  localeSelect.setAttribute("value", currentLocale);
+  localeSelect.setAttribute("data-current-locale", currentLocale);
+}
+
+// Меняет активный язык и, при необходимости, сразу перерисовывает локализованные элементы.
+function setLocale(locale, shouldApply = true) {
+  if (!window.CMF2PS_LOCALES?.[locale]) return false;
+
+  currentLocale = locale;
+  if (shouldApply) {
+    applyI18n();
+    setTimeout(syncLocaleSelect, 0);
+  }
+  return true;
+}
+
+window.setCmf2PsLocale = setLocale;
 
 /////////////////////// Функции сохранения параметров
 
@@ -55,6 +139,9 @@ const SETTINGS_KEYS = {
   applyMask: "cmf2ps_apply_mask",
   resizeLayer: "cmf2ps_resize_layer",
   refFolderFilename: "cmf2ps_ref_folder_filename",
+  locale: "cmf2ps_locale",
+  customNodesToken: "cmf2ps_custom_nodes_token",
+  customNodesPath: "cmf2ps_custom_nodes_path",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -178,6 +265,93 @@ function watchThemeChanges() {
 }
 ///////////////////////////////////////
 
+/////////////////////////////////////// Установка comfyui-cmf2ps через uxp
+
+function setBackendPathText(path) {
+  const input = document.getElementById("backendPathField");
+  if (!input) return;
+
+  input.value = path || "";
+}
+
+async function refreshBackendPathText() {
+  const savedPath = loadSetting(SETTINGS_KEYS.customNodesPath);
+  if (savedPath) {
+    setBackendPathText(savedPath);
+    return;
+  }
+
+  const token = loadSetting(SETTINGS_KEYS.customNodesToken);
+  if (!token) return;
+
+  try {
+    const folder = await fs.getEntryForPersistentToken(token);
+    setBackendPathText(folder.nativePath || folder.name || "");
+  } catch (err) {
+    console.warn("[CMF2PS] failed to restore custom_nodes path:", err);
+    setBackendPathText("");
+  }
+}
+
+async function deleteEntryRecursive(entry) {
+  if (entry.isFolder) {
+    const entries = await entry.getEntries();
+    for (const child of entries) {
+      await deleteEntryRecursive(child);
+    }
+  }
+
+  await entry.delete();
+}
+
+async function selectCustomNodesFolder() {
+  // Пользователь выбирает ComfyUI/custom_nodes, UXP выдает доступ только к выбранной папке.
+  const folder = await fs.getFolder();
+  if (!folder) return;
+
+  // Persistent token нужен, чтобы не спрашивать путь заново после перезапуска Photoshop.
+  const token = await fs.createPersistentToken(folder);
+  saveSetting(SETTINGS_KEYS.customNodesToken, token);
+  saveSetting(
+    SETTINGS_KEYS.customNodesPath,
+    folder.nativePath || folder.name || "",
+  );
+  setBackendPathText(folder.nativePath || folder.name || "");
+}
+
+async function installComfyNode() {
+  const token = loadSetting(SETTINGS_KEYS.customNodesToken);
+  if (!token) throw new Error("Custom nodes folder is not selected");
+
+  const customNodesFolder = await fs.getEntryForPersistentToken(token);
+
+  // Backend лежит внутри плагина, поэтому читаем его из read-only plugin folder.
+  const pluginFolder = await fs.getPluginFolder();
+  const backendFolder = await pluginFolder.getEntry("backend");
+  const sourceNodeFolder = await backendFolder.getEntry("comfyui-cmf2ps");
+
+  // Если папка ноды уже установлена, сначала удаляем ее содержимое и саму папку.
+  // copyTo с allowFolderCopy не всегда заменяет существующую папку рекурсивно.
+  let installedNodeFolder = null;
+  try {
+    installedNodeFolder = await customNodesFolder.getEntry("comfyui-cmf2ps");
+  } catch (err) {
+    console.log("[CMF2PS] comfyui-cmf2ps is not installed yet:", err);
+  }
+
+  if (installedNodeFolder) {
+    await deleteEntryRecursive(installedNodeFolder);
+  }
+
+  // Копируем всю папку ноды в custom_nodes уже как новую установку.
+  await sourceNodeFolder.copyTo(customNodesFolder, {
+    overwrite: true,
+    allowFolderCopy: true,
+  });
+}
+
+///////////////////////////////////////
+
 // Клик по кнопкам
 document.getElementById("btnSnapshot").addEventListener("click", async () => {
   try {
@@ -229,6 +403,24 @@ document.getElementById("btnSendRef").addEventListener("click", async () => {
     console.error("ComfyUI error:", err);
   }
 });
+
+document.getElementById("btnSetBackend").addEventListener("click", async () => {
+  try {
+    await selectCustomNodesFolder();
+  } catch (err) {
+    console.error("ComfyUI error:", err);
+  }
+});
+
+document
+  .getElementById("btnBackendInstall")
+  .addEventListener("click", async () => {
+    try {
+      await installComfyNode();
+    } catch (err) {
+      console.error("ComfyUI error:", err);
+    }
+  });
 
 document
   .getElementById("btnSendRefInFolder")
@@ -321,10 +513,18 @@ document
 
 // Настройки
 document.addEventListener("DOMContentLoaded", () => {
+  const savedLocale = loadSetting(SETTINGS_KEYS.locale);
+  if (savedLocale) {
+    setLocale(savedLocale, false);
+  }
+
+  applyI18n();
+
   const main = document.querySelector(".main");
   const dlg = document.getElementById("settingsDialog");
   const btnOpenSettings = document.getElementById("btnOpenSettings");
   const chkTwoLevelLayout = document.getElementById("chkTwoLevelLayout");
+  const localeSelect = document.getElementById("localeSelect");
 
   function applyTwoLevelLayout(enabled) {
     if (!main) return;
@@ -351,7 +551,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnOpenSettings && dlg) {
     btnOpenSettings.addEventListener("click", async () => {
       try {
+        syncLocaleSelect();
+        setTimeout(syncLocaleSelect, 0);
+        setTimeout(syncLocaleSelect, 50);
         await dlg.showModal();
+        syncLocaleSelect();
       } catch (e) {
         console.log("settings dialog error:", e);
       }
@@ -361,6 +565,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (chkTwoLevelLayout) {
     chkTwoLevelLayout.addEventListener("change", (e) => {
       applyTwoLevelLayout(!!e.target.checked);
+    });
+  }
+
+  if (localeSelect) {
+    syncLocaleSelect();
+    localeSelect.addEventListener("change", (e) => {
+      const locale = getSelectedLocaleFromSelect(e.target);
+
+      if (setLocale(locale)) {
+        saveSetting(SETTINGS_KEYS.locale, locale);
+        syncLocaleSelect();
+      }
     });
   }
 
@@ -462,6 +678,8 @@ function initControls() {
     });
   }
 
+  refreshBackendPathText();
+
   bApplyMask = loadBooleanSetting(SETTINGS_KEYS.applyMask, bApplyMask);
   chkApplyMask.checked = bApplyMask;
 
@@ -490,7 +708,9 @@ function initControls() {
   const btnSelectInCenter = document.getElementById("btnSelectInCenter");
   bSelectInCenter = false;
   btnSelectInCenter.removeAttribute("selected");
-  btnSelectInCenter.title = "Выделение по центру текущего выделения / слоя";
+  btnSelectInCenter.dataset.i18nTitle = "titles.selectInSelectionCenter";
+  btnSelectInCenter.title = t("titles.selectInSelectionCenter");
+  btnSelectInCenter.setAttribute("title", btnSelectInCenter.title);
 
   function refreshGenCount() {
     genCountLabel.textContent = String(generationCount);
@@ -556,11 +776,14 @@ function initControls() {
 
     if (bSelectInCenter) {
       btnSelectInCenter.setAttribute("selected", "");
-      btnSelectInCenter.title = "Выделение по центру документа";
+      btnSelectInCenter.dataset.i18nTitle = "titles.selectInDocumentCenter";
+      btnSelectInCenter.title = t("titles.selectInDocumentCenter");
     } else {
       btnSelectInCenter.removeAttribute("selected");
-      btnSelectInCenter.title = "Выделение по центру текущего выделения / слоя";
+      btnSelectInCenter.dataset.i18nTitle = "titles.selectInSelectionCenter";
+      btnSelectInCenter.title = t("titles.selectInSelectionCenter");
     }
+    btnSelectInCenter.setAttribute("title", btnSelectInCenter.title);
 
     console.log("bSelectInCenter:", bSelectInCenter);
   });
