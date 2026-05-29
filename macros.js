@@ -878,6 +878,66 @@ const commandNewLayerTemp = [
   },
 ];
 
+const commandMaskFix = [
+  // Сделать слой-заливка
+  {
+    _obj: "make",
+    _target: [
+      {
+        _ref: "contentLayer",
+      },
+    ],
+    using: {
+      _obj: "contentLayer",
+      type: {
+        _obj: "solidColorLayer",
+        color: {
+          _obj: "RGBColor",
+          blue: 0.0,
+          grain: 0.0,
+          red: 0.0,
+        },
+      },
+    },
+  },
+  // Перемещение текущ. слой
+  {
+    _obj: "move",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "targetEnum",
+      },
+    ],
+    to: {
+      _enum: "ordinal",
+      _ref: "layer",
+      _value: "previous",
+    },
+  },
+  // Выделение вперед слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "forwardEnum",
+      },
+    ],
+    makeVisible: false,
+    selectionModifier: {
+      _enum: "selectionModifierType",
+      _value: "addToSelection",
+    },
+  },
+  // Объединить слои
+  {
+    _obj: "mergeLayersNew",
+  },
+];
+
 module.exports = {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -898,4 +958,5 @@ module.exports = {
   commandDelLayer,
   commandsSelectMask,
   commandNewLayerTemp,
+  commandMaskFix,
 };

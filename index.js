@@ -27,6 +27,7 @@ let selectedRefIndex = -1;
 
 let bApplyMask = true;
 let bResizeLayer = false;
+let bAutoUpdatePreview = false;
 
 let inpaintMaskMod = false;
 
@@ -142,6 +143,7 @@ const SETTINGS_KEYS = {
   locale: "cmf2ps_locale",
   customNodesToken: "cmf2ps_custom_nodes_token",
   customNodesPath: "cmf2ps_custom_nodes_path",
+  autoUpdatePreview: "cmf2ps_auto_update_preview",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -511,6 +513,33 @@ document
 
 ////////////////////////////
 
+// Импорт макросов
+
+const {
+  commandsMakeMaskMerge5p01,
+  commandsMakeMaskMerge5p02,
+  commandsAddInpaintMask,
+  commandsPrepareLayerToCrop,
+  commandsPrepareLayerToCropMMAS3,
+  commandsMakeInpaintMask,
+  commandsMakeInpaintMaskMMAS3,
+  commandsFixBackground,
+  commandsFixBackgroundMMAS3,
+  commandsSetRGB,
+  commandsMakeRef,
+  // commandsSendBitmapToMask,
+  commandsMaskFromImage,
+  commandApplyMask,
+  commandSelDown,
+  commandSelUp,
+  commandDelLayer,
+  commandsSelectMask,
+  commandNewLayerTemp,
+  commandMaskFix,
+} = require("./macros");
+
+////////////////////////////
+
 // Настройки
 document.addEventListener("DOMContentLoaded", () => {
   const savedLocale = loadSetting(SETTINGS_KEYS.locale);
@@ -524,6 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dlg = document.getElementById("settingsDialog");
   const btnOpenSettings = document.getElementById("btnOpenSettings");
   const chkTwoLevelLayout = document.getElementById("chkTwoLevelLayout");
+  const chkAutoUpdatePreview = document.getElementById("chkAutoUpdatePreview");
   const localeSelect = document.getElementById("localeSelect");
 
   function applyTwoLevelLayout(enabled) {
@@ -548,6 +578,12 @@ document.addEventListener("DOMContentLoaded", () => {
     applyTwoLevelLayout(enabled);
   }
 
+  bAutoUpdatePreview = loadBooleanSetting(
+    SETTINGS_KEYS.autoUpdatePreview,
+    bAutoUpdatePreview,
+  );
+  chkAutoUpdatePreview.checked = bAutoUpdatePreview;
+
   if (btnOpenSettings && dlg) {
     btnOpenSettings.addEventListener("click", async () => {
       try {
@@ -565,6 +601,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (chkTwoLevelLayout) {
     chkTwoLevelLayout.addEventListener("change", (e) => {
       applyTwoLevelLayout(!!e.target.checked);
+    });
+  }
+
+  if (chkAutoUpdatePreview) {
+    chkAutoUpdatePreview.addEventListener("change", (e) => {
+      bAutoUpdatePreview = e.target.checked;
+      saveSetting(
+        SETTINGS_KEYS.autoUpdatePreview,
+        bAutoUpdatePreview ? "1" : "0",
+      );
+      // console.log("autoUpdatePreview:", bAutoUpdatePreview);
     });
   }
 
@@ -855,9 +902,8 @@ async function applySelectedPreview() {
     //   commandName: "qSelectMask",
     // });
 
-    /*   await require("photoshop").core.executeAsModal(maskFix, {
-    commandName: "Action Commands",
-  }); */
+    await require("photoshop").action.batchPlay(commandMaskFix, {});
+
     await selectMask();
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
@@ -916,11 +962,11 @@ async function addPreviewLayer() {
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
-    /*   const p2b = perfStart("maskFix");
-    await require("photoshop").core.executeAsModal(maskFix, {
-    commandName: "Action Commands",
-  });
-  perfEnd(p2b); */
+
+    const p2b = perfStart("maskFix");
+    await require("photoshop").action.batchPlay(commandMaskFix, {});
+    perfEnd(p2b);
+
     await selectMask();
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
@@ -1503,30 +1549,6 @@ async function setPPI72() {
 }
 
 ////////////////
-
-// Импорт макросов
-
-const {
-  commandsMakeMaskMerge5p01,
-  commandsMakeMaskMerge5p02,
-  commandsAddInpaintMask,
-  commandsPrepareLayerToCrop,
-  commandsPrepareLayerToCropMMAS3,
-  commandsMakeInpaintMask,
-  commandsMakeInpaintMaskMMAS3,
-  commandsFixBackground,
-  commandsFixBackgroundMMAS3,
-  commandsSetRGB,
-  commandsMakeRef,
-  // commandsSendBitmapToMask,
-  commandsMaskFromImage,
-  commandApplyMask,
-  commandSelDown,
-  commandSelUp,
-  commandDelLayer,
-  commandsSelectMask,
-  commandNewLayerTemp,
-} = require("./macros");
 
 async function restoreHistoryState(historyState) {
   const historyStateId = historyState?._id ?? historyState?.id;
@@ -2397,8 +2419,8 @@ async function handleWsMessage(msg) {
       if (firstRender == true) {
         console.log("firstRender");
         await addPreviewLayer();
-      } else {
-        selectedPreviewIndex = previewItems.length - 1
+      } else if (bAutoUpdatePreview == true) {
+        selectedPreviewIndex = previewItems.length - 1;
         renderPreviewList();
         await addPreviewLayer();
       }

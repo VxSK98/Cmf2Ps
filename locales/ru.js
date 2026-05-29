@@ -25,10 +25,12 @@ window.CMF2PS_LOCALES.ru = {
     languageRu: "Русский",
     languageEn: "Английский(Beta)",
     twoLevelLayout: "Двухуровневый макет",
+    autoUpdatePreview: "Автообновление превью",
     about: "О программе",
   },
   hints: {
-    twoLevelLayout: "Выносит окно предпросмотра в отдельную правую колонку.",
+    twoLevelLayout: "Выносит окно предпросмотра в отдельную правую колонку",
+    autoUpdatePreview: "При получении данных из comfy автоматически переключается на крайний результат",
   },
   placeholders: {
     refFilename: "Название файла.png",

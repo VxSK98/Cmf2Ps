@@ -25,10 +25,12 @@ window.CMF2PS_LOCALES.en = {
     languageRu: "Russian",
     languageEn: "English(Beta)",
     twoLevelLayout: "Two-Level Layout",
+    autoUpdatePreview: "Auto-update previews",
     about: "About",
   },
   hints: {
-    twoLevelLayout: "Moves the preview window into a separate right column.",
+    twoLevelLayout: "Moves the preview window into a separate right column",
+    autoUpdatePreview: "When receiving data from comfy, it automatically switches to the latest result",
   },
   placeholders: {
     refFilename: "File name.png",
