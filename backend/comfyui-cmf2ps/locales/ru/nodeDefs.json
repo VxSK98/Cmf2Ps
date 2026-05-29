@@ -61,5 +61,76 @@
         "tooltip": "Высота референса, округленная вниз до кратности 8"
       }
     }
+  },
+  "CMF2PS_NormalToAO": {
+    "display_name": "Normal to AO (CMF2PS)",
+    "inputs": {
+      "normal": {
+        "name": "normal",
+        "tooltip": "Normal map для генерации AO"
+      },
+      "radii": {
+        "name": "радиусы",
+        "tooltip": "Радиусы лучей AO в пикселях через запятую"
+      },
+      "directions": {
+        "name": "направления",
+        "tooltip": "Количество направлений для семплирования AO"
+      },
+      "bias": {
+        "name": "bias",
+        "tooltip": "Порог высоты, который отсеивает слишком мелкие перепады"
+      },
+      "intensity": {
+        "name": "сила",
+        "tooltip": "Множитель силы AO"
+      },
+      "depth_strength": {
+        "name": "сила глубины",
+        "tooltip": "Широкая cavity-окклюзия от height map. Чем выше значение, тем заметнее глубина"
+      },
+      "edge_strength": {
+        "name": "сила краёв",
+        "tooltip": "Сила мелких horizon/contact деталей. Уменьшение снижает тёмную окантовку"
+      },
+      "ray_step": {
+        "name": "шаг луча",
+        "tooltip": "Шаг в пикселях между семплами вдоль луча"
+      },
+      "ao_blur": {
+        "name": "AO blur",
+        "tooltip": "Финальное размытие для более мягкого AO в стиле SD/Substance"
+      },
+      "post_blur": {
+        "name": "post blur",
+        "tooltip": "Blur после восстановления height map из normal map"
+      },
+      "highpass_radius": {
+        "name": "highpass radius",
+        "tooltip": "Радиус усиления деталей height map перед AO"
+      },
+      "highpass_amount": {
+        "name": "highpass amount",
+        "tooltip": "Сила усиления деталей восстановленной height map"
+      },
+      "invert_y": {
+        "name": "инвертировать Y",
+        "tooltip": "Инвертировать зеленый канал normal map перед восстановлением высоты"
+      },
+      "white_occlusion": {
+        "name": "белая окклюзия",
+        "tooltip": "Инвертировать AO, чтобы закрытые участки стали белыми"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "AO",
+        "tooltip": "Сгенерированная ambient occlusion map"
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Восстановленная height map, использованная для AO"
+      }
+    }
   }
 }

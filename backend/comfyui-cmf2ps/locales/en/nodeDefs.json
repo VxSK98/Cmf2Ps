@@ -61,5 +61,76 @@
         "tooltip": "Reference image height rounded down to a multiple of 8"
       }
     }
+  },
+  "CMF2PS_NormalToAO": {
+    "display_name": "Normal to AO (CMF2PS)",
+    "inputs": {
+      "normal": {
+        "name": "normal",
+        "tooltip": "Normal map image"
+      },
+      "radii": {
+        "name": "radii",
+        "tooltip": "Comma-separated AO ray radii in pixels"
+      },
+      "directions": {
+        "name": "directions",
+        "tooltip": "Number of ray directions for AO sampling"
+      },
+      "bias": {
+        "name": "bias",
+        "tooltip": "Height threshold used to ignore tiny differences"
+      },
+      "intensity": {
+        "name": "intensity",
+        "tooltip": "AO strength multiplier"
+      },
+      "depth_strength": {
+        "name": "depth strength",
+        "tooltip": "Broad height-map cavity strength. Higher values make depth more visible"
+      },
+      "edge_strength": {
+        "name": "edge strength",
+        "tooltip": "Fine horizon/contact strength. Lower values reduce dark outlines"
+      },
+      "ray_step": {
+        "name": "ray step",
+        "tooltip": "Pixel step between samples along each ray"
+      },
+      "ao_blur": {
+        "name": "AO blur",
+        "tooltip": "Final blur for smoother SD/Substance-like AO"
+      },
+      "post_blur": {
+        "name": "post blur",
+        "tooltip": "Blur kernel applied after normal-to-height integration"
+      },
+      "highpass_radius": {
+        "name": "highpass radius",
+        "tooltip": "Radius used to enhance height-map details before AO"
+      },
+      "highpass_amount": {
+        "name": "highpass amount",
+        "tooltip": "Detail enhancement amount for the reconstructed height map"
+      },
+      "invert_y": {
+        "name": "invert Y",
+        "tooltip": "Flip the green normal-map channel before height reconstruction"
+      },
+      "white_occlusion": {
+        "name": "white occlusion",
+        "tooltip": "Invert the AO so occluded areas become white"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "AO",
+        "tooltip": "Generated ambient occlusion image"
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Reconstructed height map used for AO"
+      }
+    }
   }
 }

@@ -2201,7 +2201,7 @@ function renderPreviewList() {
 
       wrap.addEventListener("click", async () => {
         selectedPreviewIndex = index;
-        // console.log("item.filename", item.filename);
+        console.log("selectedPreviewIndex", selectedPreviewIndex);
         await addPreviewLayer();
         renderPreviewList();
       });
@@ -2396,6 +2396,10 @@ async function handleWsMessage(msg) {
       // console.log("msg.data", msg.data);
       if (firstRender == true) {
         console.log("firstRender");
+        await addPreviewLayer();
+      } else {
+        selectedPreviewIndex = previewItems.length - 1
+        renderPreviewList();
         await addPreviewLayer();
       }
     }
