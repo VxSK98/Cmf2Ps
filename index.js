@@ -497,22 +497,6 @@ document
 
 ////////////////////////////
 
-// document.getElementById("btnTest").addEventListener("click", async () => {
-//   try {
-//     const p1 = perfStart("btnTest");
-//     await runAsSingleHistoryState("CMF2PS btnTest", async () => {
-//       await selectMask();
-//     });
-//     // await exportSnapshotMask();
-
-//     perfEnd(p1);
-//   } catch (err) {
-//     console.error("ComfyUI error:", err);
-//   }
-// });
-
-////////////////////////////
-
 // Импорт макросов
 
 const {
@@ -536,7 +520,27 @@ const {
   commandsSelectMask,
   commandNewLayerTemp,
   commandMaskFix,
+  commandQSelectMask,
+  commandSelectMaskDownLayer,
+  commandApplyMask2,
 } = require("./macros");
+
+////////////////////////////
+
+// document.getElementById("btnTest").addEventListener("click", async () => {
+//   try {
+//     const p1 = perfStart("btnTest");
+//     await runAsSingleHistoryState("CMF2PS btnTest", async () => {
+//       // await selectMask();
+//       await appendMask();
+//       // await require("photoshop").action.batchPlay(commandQSelectMask, {});
+//     });
+
+//     perfEnd(p1);
+//   } catch (err) {
+//     console.error("ComfyUI error:", err);
+//   }
+// });
 
 ////////////////////////////
 
@@ -842,16 +846,6 @@ function initControls() {
   initAspectDropdown();
 }
 
-// document.getElementById("btnStartJson").addEventListener("click", async () => {
-//   try {
-//     bImageState = true;
-//     // startGeneration();
-//     runWorkflow();
-//   } catch (err) {
-//     console.error("ComfyUI error:", err);
-//   }
-// });
-
 async function getSelectionBounds() {
   const hasSel = await hasSelection();
   if (!hasSel) return null;
@@ -902,9 +896,11 @@ async function applySelectedPreview() {
     //   commandName: "qSelectMask",
     // });
 
-    await require("photoshop").action.batchPlay(commandMaskFix, {});
+    // await require("photoshop").action.batchPlay(commandMaskFix, {});
+    // await selectMask();
 
-    await selectMask();
+    await require("photoshop").action.batchPlay(commandQSelectMask, {});
+
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
     const imageOutputBytes = base64ToUint8Array(item.data);
@@ -963,11 +959,13 @@ async function addPreviewLayer() {
     //   commandName: "qSelectMask",
     // });
 
-    const p2b = perfStart("maskFix");
-    await require("photoshop").action.batchPlay(commandMaskFix, {});
-    perfEnd(p2b);
+    // const p2b = perfStart("maskFix");
+    // await require("photoshop").action.batchPlay(commandMaskFix, {});
+    // perfEnd(p2b);
+    // await selectMask();
 
-    await selectMask();
+    await require("photoshop").action.batchPlay(commandQSelectMask, {});
+
     perfEnd(p2);
     const p3 = perfStart("импорт bitmap");
     const imageOutputBytes = base64ToUint8Array(item.data);
@@ -993,7 +991,7 @@ async function addPreviewLayer() {
 
 async function applyMaskInCurrentModal() {
   if (bApplyMask == true) {
-    await appendMask();
+    await appendMask_new();
   } else {
     await delTempMask();
   }
@@ -1981,6 +1979,21 @@ async function applyMaskMacros() {
   return await require("photoshop").action.batchPlay(commands, {});
 }
 
+async function appendMask_new() {
+  // await require("photoshop").action.batchPlay(commandsMaskFromImage, {});
+  await require("photoshop").action.batchPlay(commandSelectMaskDownLayer, {});
+  // await require("photoshop").action.batchPlay(commandSelectMaskCurrent, {});
+  // await require("photoshop").action.batchPlay(commandSelDown, {});
+  await require("photoshop").action.batchPlay(commandDelLayer, {});
+  await require("photoshop").action.batchPlay(commandSelUp, {});
+  await require("photoshop").action.batchPlay(commandApplyMask2, {});
+
+  // console.log("maskBlurValue", maskBlurValue);
+  if (maskBlurValue != 0) {
+    await blurMask(maskBlurValue);
+  }
+}
+
 async function appendMask() {
   await require("photoshop").action.batchPlay(commandsMaskFromImage, {});
   await require("photoshop").action.batchPlay(commandsSelectMask, {});
@@ -2106,16 +2119,16 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const prevResizeDuringPlace = await getResizeDuringPlace();
   await setResizeDuringPlace(false);
 
-  console.log("[CMF2PS] imgPPI", imgPPI);
-  console.log("[CMF2PS] docPPI", docPPI);
+  // console.log("[CMF2PS] imgPPI", imgPPI);
+  // console.log("[CMF2PS] docPPI", docPPI);
   // console.log("[CMF2PS] imgWidth", imgWidth);
   // console.log("[CMF2PS] imgHeight", imgHeight);
-  console.log("[CMF2PS] snapshotSize", snapshotSize);
-  console.log("[CMF2PS] docSize", { width: docW, height: docH });
-  console.log("[CMF2PS] selection", sel);
-  console.log("[CMF2PS] autoFit", autoFit);
-  console.log("[CMF2PS] correctionWidth", correctionWidth);
-  console.log("[CMF2PS] correctionHeight", correctionHeight);
+  // console.log("[CMF2PS] snapshotSize", snapshotSize);
+  // console.log("[CMF2PS] docSize", { width: docW, height: docH });
+  // console.log("[CMF2PS] selection", sel);
+  // console.log("[CMF2PS] autoFit", autoFit);
+  // console.log("[CMF2PS] correctionWidth", correctionWidth);
+  // console.log("[CMF2PS] correctionHeight", correctionHeight);
 
   const token = await fs.createSessionToken(file);
 

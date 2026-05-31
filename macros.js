@@ -938,6 +938,131 @@ const commandMaskFix = [
   },
 ];
 
+const commandQSelectMask = [
+  // Сделать
+  {
+    _obj: "make",
+    at: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "mask",
+    },
+    new: {
+      _class: "channel",
+    },
+    using: {
+      _enum: "userMaskEnabled",
+      _value: "revealAll",
+    },
+  },
+  // Цветовой диапазон
+  {
+    _obj: "colorRange",
+    colorModel: 0,
+    colors: {
+      _enum: "colors",
+      _value: "highlights",
+    },
+    highlightsFuzziness: 100,
+    highlightsLowerLimit: 255,
+  },
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    to: {
+      _enum: "ordinal",
+      _ref: "channel",
+      _value: "targetEnum",
+    },
+  },
+];
+
+const commandSelectMaskDownLayer = [
+  // Выделение назад слой
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "ordinal",
+        _ref: "layer",
+        _value: "backwardEnum",
+      },
+    ],
+    layerID: [253],
+    makeVisible: false,
+  },
+  // Выделение маска канал
+  {
+    _obj: "select",
+    _target: [
+      {
+        _enum: "channel",
+        _ref: "channel",
+        _value: "mask",
+      },
+    ],
+  },
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    maskParameters: true,
+    to: {
+      _enum: "ordinal",
+      _ref: "channel",
+      _value: "targetEnum",
+    },
+    version: 1,
+  },
+];
+
+const commandApplyMask2 = [
+  // Сделать
+  {
+    _obj: "make",
+    at: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "mask",
+    },
+    new: {
+      _class: "channel",
+    },
+    using: {
+      _enum: "userMaskEnabled",
+      _value: "revealSelection",
+    },
+  },
+   // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    maskParameters: true,
+    to: {
+      _enum: "ordinal",
+      _ref: "channel",
+      _value: "targetEnum",
+    },
+    version: 1,
+  },
+];
+
 module.exports = {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -959,4 +1084,7 @@ module.exports = {
   commandsSelectMask,
   commandNewLayerTemp,
   commandMaskFix,
+  commandQSelectMask,
+  commandSelectMaskDownLayer,
+  commandApplyMask2,
 };
