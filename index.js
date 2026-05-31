@@ -889,6 +889,7 @@ async function applySelectedPreview() {
     const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
+    await require("photoshop").action.batchPlay(commandsSetRGB, {}); // Переключение на rgb чинит некоторые глюки при inpaintmask
     await openImgInPS(imageMaskBytes, item.filename + "_mask");
     await resetTransform();
     await centerActiveLayer();
@@ -952,6 +953,7 @@ async function addPreviewLayer() {
     const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
+    await require("photoshop").action.batchPlay(commandsSetRGB, {}); // Переключение на rgb чинит некоторые глюки при inpaintmask
     await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask");
     await resetTransform();
     await centerActiveLayer();

@@ -63,7 +63,7 @@
     }
   },
   "CMF2PS_NormalToAO": {
-    "display_name": "Normal to AO (CMF2PS)",
+    "display_name": "Normal в HM/AO (CMF2PS)",
     "inputs": {
       "normal": {
         "name": "normal",
@@ -98,19 +98,19 @@
         "tooltip": "Шаг в пикселях между семплами вдоль луча"
       },
       "ao_blur": {
-        "name": "AO blur",
-        "tooltip": "Финальное размытие для более мягкого AO в стиле SD/Substance"
+        "name": "AO размытие",
+        "tooltip": "Финальное размытие для более мягкого AO"
       },
       "post_blur": {
-        "name": "post blur",
+        "name": "размытие HM",
         "tooltip": "Blur после восстановления height map из normal map"
       },
       "highpass_radius": {
-        "name": "highpass radius",
+        "name": "highpass радиус",
         "tooltip": "Радиус усиления деталей height map перед AO"
       },
       "highpass_amount": {
-        "name": "highpass amount",
+        "name": "highpass усиление",
         "tooltip": "Сила усиления деталей восстановленной height map"
       },
       "invert_y": {
@@ -118,7 +118,7 @@
         "tooltip": "Инвертировать зеленый канал normal map перед восстановлением высоты"
       },
       "white_occlusion": {
-        "name": "белая окклюзия",
+        "name": "инвертировать AO",
         "tooltip": "Инвертировать AO, чтобы закрытые участки стали белыми"
       }
     },

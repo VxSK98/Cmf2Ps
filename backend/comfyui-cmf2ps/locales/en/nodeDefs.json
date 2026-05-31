@@ -63,7 +63,7 @@
     }
   },
   "CMF2PS_NormalToAO": {
-    "display_name": "Normal to AO (CMF2PS)",
+    "display_name": "Normal to HM/AO (CMF2PS)",
     "inputs": {
       "normal": {
         "name": "normal",
@@ -99,7 +99,7 @@
       },
       "ao_blur": {
         "name": "AO blur",
-        "tooltip": "Final blur for smoother SD/Substance-like AO"
+        "tooltip": "Final blur for smoother AO"
       },
       "post_blur": {
         "name": "post blur",
@@ -118,7 +118,7 @@
         "tooltip": "Flip the green normal-map channel before height reconstruction"
       },
       "white_occlusion": {
-        "name": "white occlusion",
+        "name": "invert AO",
         "tooltip": "Invert the AO so occluded areas become white"
       }
     },
