@@ -1663,7 +1663,8 @@ async function sendRef(sFilename, bAddRefItem, sRefresh) {
       await app.activeDocument.saveAs.png(entryImg, { compression: 5 }, true);
       const imgBase64 = await entryToBase64(entryImg);
       if (bAddRefItem == true) {
-        selectedRefIndex++;
+        selectedRefIndex = refItems.length;
+        // selectedRefIndex++;
         addRefItem("ref", imgBase64);
       }
       await pushRefToComfy(imgBase64, sFilename, sRefresh);
@@ -2110,8 +2111,8 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   let correctionWidth = correction;
   let correctionHeight = correction;
   if (
-    snapshotSize.width != imgWidth &&
-    snapshotSize.height != imgHeight &&
+    snapshotSize.width != (Math.max(8, Math.floor(toPx(imgWidth) / 8) * 8)) &&
+    snapshotSize.height != (Math.max(8, Math.floor(toPx(imgHeight) / 8) * 8)) &&
     bResizeLayer == true
   ) {
     correctionWidth = correction * (snapshotSize.width / imgWidth);

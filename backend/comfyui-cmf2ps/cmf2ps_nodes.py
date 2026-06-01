@@ -380,9 +380,7 @@ class CMF2PS_LoadImage:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
-                "client_id": ("STRING", {"default": "ps"}),
-            }
+            "required": {}
         }
 
     RETURN_TYPES = ("IMAGE", "MASK", "INT", "INT")
@@ -441,9 +439,7 @@ class CMF2PS_LoadRef:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
-                "client_id": ("STRING", {"default": "ps"}),
-            }
+            "required": {}
         }
 
     RETURN_TYPES = ("IMAGE", "INT", "INT")
