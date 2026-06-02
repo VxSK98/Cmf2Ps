@@ -50,7 +50,7 @@
 
 ## Ноды ComfyUI
 
-Backend регистрирует три основные ноды:
+Backend регистрирует 4 основные ноды:
 
 - `CMF2PS_LoadImage`
   Загружает snapshot и маску, пришедшие из Photoshop.
@@ -58,6 +58,8 @@ Backend регистрирует три основные ноды:
   Загружает ref-изображение, присланное из Photoshop.
 - `CMF2PS_SendToPhotoshop`
   Отправляет итоговые изображения обратно в панель Photoshop.
+- `CMF2PS_NormalToAO`
+  Генерация карты высот и AO из нормала
 
 Типовой pipeline:
 

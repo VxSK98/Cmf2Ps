@@ -138,13 +138,30 @@ def _gaussian_kernel1d(kernel_size, dtype, device):
     return kernel / kernel.sum()
 
 
-def _blur_height(height, kernel_size):
+def _blur_height(height, kernel_size, tileable=False):
     kernel = _gaussian_kernel1d(kernel_size, height.dtype, height.device)
     if kernel is None:
         return height
 
     b, h, w = height.shape
     pad = kernel.numel() // 2
+
+    if tileable:
+        x = height
+        if w > 1:
+            blurred = torch.zeros_like(x)
+            for index, weight in enumerate(kernel):
+                offset = index - pad
+                blurred = blurred + torch.roll(x, shifts=offset, dims=2) * weight
+            x = blurred
+        if h > 1:
+            blurred = torch.zeros_like(x)
+            for index, weight in enumerate(kernel):
+                offset = index - pad
+                blurred = blurred + torch.roll(x, shifts=offset, dims=1) * weight
+            x = blurred
+        return x
+
     x = height[:, None, :, :]
     kx = kernel.view(1, 1, 1, -1)
     ky = kernel.view(1, 1, -1, 1)
@@ -167,7 +184,7 @@ def _normalize_height(height):
     return torch.where(span > 1e-8, (height - h_min) / span.clamp_min(1e-8), torch.zeros_like(height))
 
 
-def _normal_to_height(normal, invert_y=False, post_blur=1):
+def _normal_to_height(normal, invert_y=False, post_blur=1, tileable=False):
     normal = normal.clamp(0.0, 1.0).to(dtype=torch.float32)
     x = normal[..., 0] * 2.0 - 1.0
     y = normal[..., 1] * 2.0 - 1.0
@@ -193,19 +210,19 @@ def _normal_to_height(normal, invert_y=False, post_blur=1):
 
     kernel_size = int(max(0, post_blur)) | 1
     if kernel_size > 1:
-        height = _blur_height(height, kernel_size)
+        height = _blur_height(height, kernel_size, tileable=tileable)
 
     return -height
 
 
-def _highpass_enhance(height, radius=16, amount=1.0):
+def _highpass_enhance(height, radius=16, amount=1.0, tileable=False):
     radius = int(max(0, radius))
     amount = float(amount)
     if radius <= 0 or amount == 0.0:
         return _normalize_height(height)
 
     kernel_size = (radius * 2) | 1
-    low = _blur_height(height, kernel_size)
+    low = _blur_height(height, kernel_size, tileable=tileable)
     high = height - low
     abs_high = high.abs().flatten(1)
     kth = max(1, int((abs_high.shape[1] - 1) * 0.95) + 1)
@@ -214,7 +231,10 @@ def _highpass_enhance(height, radius=16, amount=1.0):
     return _normalize_height(enhanced).clamp(0.0, 1.0)
 
 
-def _shift_sample(height, dy, dx):
+def _shift_sample(height, dy, dx, tileable=False):
+    if tileable:
+        return torch.roll(height, shifts=(-dy, -dx), dims=(1, 2)), torch.ones_like(height)
+
     b, h, w = height.shape
     dst_y0 = max(0, -dy)
     dst_y1 = min(h, h - dy)
@@ -246,6 +266,7 @@ def _height_to_ao(
     depth_strength=2.5,
     edge_strength=0.35,
     ao_blur=5,
+    tileable=False,
 ):
     directions = int(max(1, directions))
     step = int(max(1, step))
@@ -256,7 +277,7 @@ def _height_to_ao(
     max_radius = max(1, max(int(r) for r in radii))
 
     broad_kernel = (max_radius * 2) | 1
-    broad_height = _blur_height(height, broad_kernel)
+    broad_height = _blur_height(height, broad_kernel, tileable=tileable)
     depth_occlusion = F.relu(broad_height - height - bias * 0.25)
     depth_occlusion = 1.0 - torch.exp(-depth_occlusion * depth_strength * 5.0)
 
@@ -285,7 +306,7 @@ def _height_to_ao(
                 if dx == 0 and dy == 0:
                     continue
 
-                sample, mask = _shift_sample(height, dy, dx)
+                sample, mask = _shift_sample(height, dy, dx, tileable=tileable)
                 delta = F.relu(sample - height - bias) * mask
                 slope = (delta * depth_strength) / math.sqrt(float(distance))
                 horizon = torch.max(horizon, slope)
@@ -301,7 +322,7 @@ def _height_to_ao(
 
     ao_blur = int(max(0, ao_blur)) | 1
     if ao_blur > 1:
-        occlusion = _blur_height(occlusion, ao_blur)
+        occlusion = _blur_height(occlusion, ao_blur, tileable=tileable)
 
     return (1.0 - occlusion * intensity).clamp(0.0, 1.0)
 
@@ -328,6 +349,7 @@ class CMF2PS_NormalToAO:
                 "post_blur": ("INT", {"default": 1, "min": 0, "max": 31, "step": 2}),
                 "highpass_radius": ("INT", {"default": 16, "min": 0, "max": 128, "step": 1}),
                 "highpass_amount": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 4.0, "step": 0.05}),
+                "tileable": ("BOOLEAN", {"default": True}),
                 "invert_y": ("BOOLEAN", {"default": False}),
                 "white_occlusion": ("BOOLEAN", {"default": False}),
             }
@@ -352,12 +374,13 @@ class CMF2PS_NormalToAO:
         post_blur=1,
         highpass_radius=16,
         highpass_amount=1.0,
+        tileable=True,
         invert_y=False,
         white_occlusion=False,
     ):
         with torch.no_grad():
-            height = _normal_to_height(normal, invert_y=invert_y, post_blur=post_blur)
-            height = _highpass_enhance(height, radius=highpass_radius, amount=highpass_amount)
+            height = _normal_to_height(normal, invert_y=invert_y, post_blur=post_blur, tileable=tileable)
+            height = _highpass_enhance(height, radius=highpass_radius, amount=highpass_amount, tileable=tileable)
             ao = _height_to_ao(
                 height,
                 radii=_parse_radii(radii),
@@ -368,6 +391,7 @@ class CMF2PS_NormalToAO:
                 depth_strength=depth_strength,
                 edge_strength=edge_strength,
                 ao_blur=ao_blur,
+                tileable=tileable,
             )
 
             if white_occlusion:

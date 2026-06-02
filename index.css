@@ -1,0 +1,508 @@
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background-color: var(--uxp-host-background-color);
+      color: var(--uxp-host-text-color);
+    }
+
+.main {
+      display: flex;
+      box-sizing: content-box;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+
+    .main-action {
+      flex: 1;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .variant-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .main-action-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0px;
+    }
+
+    .gen-inline-box {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border: 1px solid #444;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+
+    .mini-btn {
+      width: 18px;
+      min-width: 18px;
+      height: 24px;
+      gap: 0px;
+      padding: 0px;
+    }
+
+    .count-box {
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      width: 18px;
+      min-width: 18px;
+      text-align: center;
+      padding: 2px;
+      box-sizing: border-box;
+      font-size: 13px;
+    }
+
+    .left-panel {
+      width: 216px;
+      min-width: 216px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toolbar-frame {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1px solid #444;
+      padding: 8px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .toolbar-label {
+      /* text-align: center; */
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      font-size: 11px;
+      opacity: 1;
+    }
+
+    .mask-frame {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1px solid #444;
+      padding: 8px;
+    }
+
+    .counter-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .counter-box sp-action-button {
+      min-width: 36px;
+    }
+
+    .counter-value {
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .slider-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slider-inline input[type="range"] {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .slider-value {
+      min-width: 38px;
+      font-size: 11px;
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      text-align: right;
+      opacity: 1;
+      transform: translateY(-6px);
+    }
+
+    .preview-frame {
+      flex: 1;
+      border: 1px solid #444;
+      min-height: 0;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .ref-frame {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1px solid #444;
+      padding: 8px;
+      max-height: 380px; /* общая высота блока рефов */
+      min-height: 0;
+    }
+
+    .preview-ref {
+      max-height: 200px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .preview-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      /* height: 0; */
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .padding-8px {
+      padding: 8px;
+    }
+
+    .padding-down {
+      padding: 2px;
+    }
+
+    .preview-item {
+      padding: 2px;
+      cursor: pointer;
+      box-sizing: border-box;
+      width: calc(50% - 2px);
+    }
+
+    .preview-item.selected .preview-thumb {
+      border: 2px solid #7aaaff;
+    }
+
+    .preview-thumb {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid #555;
+      box-sizing: border-box;
+    }
+
+    .preview-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+    }
+
+    .ref-file-field {
+      width: 100%;
+    }
+
+    .slider-icon {
+      width: 24px;
+      height: 24px;
+      fill: var(--uxp-host-text-color);
+      opacity: 0.8;
+    }
+
+    .web-panel {
+      flex: 1;
+      border: 1px solid #444;
+      padding: 8px;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+    }
+
+    .select-top-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .select-top-row .main-action {
+      flex: 1;
+    }
+
+    .icon-toggle-btn {
+      width: 48px;
+      min-width: 32px;
+      height: 32px;
+      padding: 0;
+      opacity: 0.55;
+      border: 1px solid transparent;
+      transition:
+        opacity 0.12s ease,
+        border-color 0.12s ease,
+        background 0.12s ease;
+    }
+
+    .settings-toggle-btn {
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      padding: 0;
+      opacity: 0.55;
+      border: 1px solid transparent;
+      transition:
+        opacity 0.12s ease,
+        border-color 0.12s ease,
+        background 0.12s ease;
+    }
+
+    .icon-toggle-btn:hover {
+      opacity: 0.85;
+    }
+
+    .icon-toggle-btn[selected] {
+      opacity: 1;
+      border-color: #7aaaff;
+      background: rgba(11, 100, 255, 0.35);
+    }
+
+    .icon-btn-img {
+      width: 48px;
+      height: 24px;
+      display: block;
+      margin: 0 auto;
+      pointer-events: none;
+      filter: grayscale(1);
+      opacity: 0.8;
+    }
+
+    .icon-btn-settings {
+      width: 24px;
+      height: 24px;
+      display: block;
+      margin: 0 auto;
+      pointer-events: none;
+      filter: grayscale(1);
+      opacity: 0.8;
+    }
+
+    .icon-toggle-btn[selected] .icon-btn-img {
+      filter: none;
+      opacity: 1;
+    }
+
+    .select-wrap {
+      display: block;
+      width: 100%;
+      padding-right: 10px;
+      box-sizing: border-box;
+    }
+
+    #aspectPreset {
+      width: 100%;
+      height: 28px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    #comfyWeb {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .custom-select {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-btn {
+      width: 100%;
+      height: 28px;
+      box-sizing: border-box;
+      padding: 0 8px;
+      border: 1px solid #666;
+      background: var(--uxp-host-background-color);
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .custom-select-btn:hover {
+      background: var(--uxp-host-background-color);
+    }
+
+    .custom-select-btn.open {
+      border-color: #7aaaff;
+    }
+
+    #aspectDropdownLabel {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-align: left;
+      flex: 1;
+    }
+
+    #btnOpenSettings {
+      margin-top: auto;
+      align-self: flex-start; /* чтобы было слева */
+    }
+
+    .custom-select-arrow {
+      margin-left: 8px;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .custom-select-menu {
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #666;
+      background: var(--uxp-host-background-color);
+      box-sizing: border-box;
+      padding: 4px 0;
+    }
+
+    .custom-select-menu.hidden {
+      display: none;
+    }
+
+    .custom-select-group-title {
+      padding: 6px 8px 4px 8px;
+      font-size: 11px;
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      opacity: 0.9;
+      border-top: 1px solid #3e3e3e;
+      margin-top: 4px;
+    }
+
+    .custom-select-group-title:first-child {
+      border-top: none;
+      margin-top: 0;
+    }
+
+    .custom-select-item {
+      padding: 2px 4px;
+      font-size: 12px;
+      line-height: 1.2;
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .custom-select-item:hover {
+      background: #7aaaff;
+    }
+
+    .custom-select-item.selected {
+      background: rgba(122, 170, 255, 0.25);
+      outline: 1px solid #7aaaff;
+    }
+
+    .settings-dialog {
+      min-width: 240px;
+      max-width: 320px;
+      padding: 8px;
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      background: var(--uxp-host-background-color);
+      box-sizing: border-box;
+    }
+
+    .settings-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .settings-section h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .settings-hint {
+      font-size: 11px;
+      opacity: 0.75;
+      line-height: 1.35;
+    }
+
+    .backend-path-field {
+      width: 100%;
+    }
+
+    .locale-select {
+      width: 100%;
+      height: 28px;
+      box-sizing: border-box;
+      background: var(--uxp-host-background-color);
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      border: 1px solid #666;
+    }
+
+    .settings-dialog a {
+      color: var(--uxp-host-text-color, var(--spectrum-global-color-gray-900));
+      text-decoration: underline;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    .preview-column {
+      display: none;
+      width: 216px;
+      min-width: 216px;
+      height: 100%;
+    }
+
+    .preview-frame-wide {
+      height: 100%;
+    }
+
+    .main.two-level-layout .preview-column {
+      display: flex;
+    }
+
+    .main.two-level-layout #previewCompact {
+      display: none;
+    }
+
+    .main:not(.two-level-layout) #previewCompact {
+      display: flex;
+    }
+
+    .main:not(.two-level-layout) .preview-column {
+      display: none;
+    }

@@ -113,6 +113,10 @@
         "name": "highpass amount",
         "tooltip": "Detail enhancement amount for the reconstructed height map"
       },
+      "tileable": {
+        "name": "tileable",
+        "tooltip": "Use wrap-around sampling and blur for seamless tile textures"
+      },
       "invert_y": {
         "name": "invert Y",
         "tooltip": "Flip the green normal-map channel before height reconstruction"
