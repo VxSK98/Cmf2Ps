@@ -1,7 +1,8 @@
 <!doctype html>
 <html>
   <head>
-    <link rel="stylesheet" href="index.css" />  <!-- Подключение css -->
+    <link rel="stylesheet" href="index.css" />
+    <!-- Подключение css -->
     <script src="locales/ru.js"></script>
     <script src="locales/en.js"></script>
     <script src="index.js"></script>
@@ -382,6 +383,18 @@
   <dialog id="settingsDialog">
     <form method="dialog" class="settings-dialog">
       <div class="settings-section">
+        <div class="main-action-row">
+          <div class="settings-hint" data-i18n="hints.serverAddress">
+            Адрес сервера
+          </div>
+          <sp-textfield
+            id="serverAddress"
+            class="backend-path-field"
+            readonly
+            placeholder="http://127.0.0.1:8188"
+          ></sp-textfield>
+        </div>
+        <div class="padding-down"></div>
         <div class="mask-frame">
           <div class="main-action-row">
             <sp-action-button
@@ -452,7 +465,7 @@
           <div class="settings-section">
             <h3 data-i18n="labels.about">О программе</h3>
             <div class="padding-down"></div>
-            <div class="settings-hint">Cmf2Ps ver 1.0.0.dev08(RC)</div>
+            <div class="settings-hint">Cmf2Ps ver 1.0.0.dev09(RC)</div>
             <div class="settings-hint">
               <a
                 id="authorLink"

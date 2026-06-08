@@ -31,6 +31,7 @@ window.CMF2PS_LOCALES.en = {
   hints: {
     twoLevelLayout: "Moves the preview window into a separate right column",
     autoUpdatePreview: "When receiving data from comfy, it automatically switches to the latest result",
+    serverAddress: "Server address",
   },
   placeholders: {
     refFilename: "File name.png",
