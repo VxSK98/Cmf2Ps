@@ -51,5 +51,6 @@ window.CMF2PS_LOCALES.en = {
     deleteRefFromFolder: "Delete a file by name from the ComfyUI\\input folder",
     settings: "Settings",
     browse: "Browse",
+    reset: "Reset to default value",
   },
 };

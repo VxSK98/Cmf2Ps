@@ -4,7 +4,9 @@ import { app } from "../../../scripts/app.js";
   const params = new URLSearchParams(window.location.search);
   const clientId = params.get("cmf2ps_client") || "ui_default";
 
-  const WS_URL = `ws://127.0.0.1:8188/cmf2ps/ws?platform=ui&client_id=${encodeURIComponent(clientId)}`;
+  // UI открыт из самого Comfy, поэтому websocket цепляем к текущему host, а не к localhost.
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const WS_URL = `${wsProtocol}//${window.location.host}/cmf2ps/ws?platform=ui&client_id=${encodeURIComponent(clientId)}`;
 
   let ws = null;
   let reconnectTimer = null;

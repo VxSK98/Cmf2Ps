@@ -52,5 +52,6 @@ window.CMF2PS_LOCALES.ru = {
     deleteRefFromFolder: "Удалить файл по имени в папке ComfyUI\\input",
     settings: "Настройки",
     browse: "Обзор",
+    reset: "Вернуть значение по умолчанию",
   },
 };

@@ -3,14 +3,14 @@ const { storage } = require("uxp");
 const fs = storage.localFileSystem;
 const formats = storage.formats;
 
-/** ws://127.0.0.1:8188/cmf2ps/ws?platform=ps */
-const WS_URL = "ws://127.0.0.1:8188/cmf2ps/ws?platform=ps";
+const DEFAULT_COMFY_SERVER_ADDRESS = "http://127.0.0.1:8188";
 const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
 
 // http://127.0.0.1:8188/cmf2ps/clients  - адрес подключенных клиентов
 
 let ws = null;
 let isConnecting = false;
+let wsReconnectTimer = null;
 // Очередь не дает async-обработчикам WebSocket накладываться друг на друга.
 let wsMessageQueue = Promise.resolve();
 let firstRender = true;
@@ -40,6 +40,7 @@ let maskPaddingValue = 8;
 // let mask2PaddingValue = 4;
 
 let selectedAspect = "1024x1024";
+let comfyServerAddress = DEFAULT_COMFY_SERVER_ADDRESS;
 
 //
 
@@ -144,6 +145,7 @@ const SETTINGS_KEYS = {
   customNodesToken: "cmf2ps_custom_nodes_token",
   customNodesPath: "cmf2ps_custom_nodes_path",
   autoUpdatePreview: "cmf2ps_auto_update_preview",
+  comfyServerAddress: "cmf2ps_comfy_server_address",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -197,6 +199,88 @@ function loadBooleanSetting(key, fallback) {
   if (raw === null) return fallback;
 
   return raw === "1";
+}
+
+// Пользователь может ввести "host:port", http(s)://host или даже ws://host.
+// Внутри плагина храним один нормальный HTTP(S)-адрес без query/hash и хвостового слеша.
+function normalizeComfyServerAddress(value) {
+  let address = String(value || "").trim();
+  if (!address) return DEFAULT_COMFY_SERVER_ADDRESS;
+
+  if (/^wss?:\/\//i.test(address)) {
+    address = address.replace(/^ws/i, "http");
+  } else if (!/^https?:\/\//i.test(address)) {
+    address = `http://${address}`;
+  }
+
+  try {
+    const url = new URL(address);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return DEFAULT_COMFY_SERVER_ADDRESS;
+    }
+
+    url.hash = "";
+    url.search = "";
+    return url.toString().replace(/\/+$/, "");
+  } catch (e) {
+    console.warn("[CMF2PS] invalid Comfy server address:", value, e);
+    return DEFAULT_COMFY_SERVER_ADDRESS;
+  }
+}
+
+// Адрес Comfy переживает закрытие панели через localStorage, как и остальные настройки.
+function loadComfyServerAddress() {
+  comfyServerAddress = normalizeComfyServerAddress(
+    loadSetting(SETTINGS_KEYS.comfyServerAddress) ||
+      DEFAULT_COMFY_SERVER_ADDRESS,
+  );
+  return comfyServerAddress;
+}
+
+// В UXP sp-textfield надежнее синхронизировать и property, и атрибут.
+function setComfyServerAddressText(value) {
+  const input = document.getElementById("serverAddress");
+  if (!input) return;
+
+  input.value = value;
+  input.setAttribute("value", value);
+}
+
+// После смены адреса сразу перезагружаем встроенный Comfy и пересоздаем WS.
+function saveComfyServerAddress(value) {
+  const normalized = normalizeComfyServerAddress(value);
+  const changed = normalized !== comfyServerAddress;
+
+  comfyServerAddress = normalized;
+  saveSetting(SETTINGS_KEYS.comfyServerAddress, normalized);
+  setComfyServerAddressText(normalized);
+
+  if (changed) {
+    reloadComfyWeb();
+    reconnectWs();
+  }
+
+  return normalized;
+}
+
+function getComfyHttpBase() {
+  return comfyServerAddress || loadComfyServerAddress();
+}
+
+// Все HTTP-запросы к Comfy должны проходить через эту функцию, а не собирать localhost руками.
+function getComfyUrl(path = "/") {
+  const base = getComfyHttpBase().replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${normalizedPath}`;
+}
+
+// WebSocket использует тот же host/path, но меняет протокол http->ws и https->wss.
+function getComfyWsUrl() {
+  const base = new URL(getComfyHttpBase());
+  const protocol = base.protocol === "https:" ? "wss:" : "ws:";
+  const path = base.pathname.replace(/\/+$/, "");
+
+  return `${protocol}//${base.host}${path}/cmf2ps/ws?platform=ps`;
 }
 
 ///////////////////////
@@ -381,7 +465,7 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
     }
     // запуск генерации
     for (let i = 0; i < generationCount; i++) {
-      const r = await fetch("http://127.0.0.1:8188/cmf2ps/generate", {
+      const r = await fetch(getComfyUrl("/cmf2ps/generate"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target_client_id: UI_CLIENT_ID }),
@@ -430,7 +514,7 @@ document
     try {
       const p1 = perfStart("SendRef perf");
       await sendRef(getRefFolderFilename(), false, "auto");
-      // const r = await fetch("http://127.0.0.1:8188/cmf2ps/refresh", {
+      // const r = await fetch(getComfyUrl("/cmf2ps/refresh"), {
       //   method: "POST",
       //   headers: { "Content-Type": "application/json" },
       //   body: JSON.stringify({ target_client_id: UI_CLIENT_ID }),
@@ -446,7 +530,7 @@ document
   .getElementById("btnDelRefInFolder")
   .addEventListener("click", async () => {
     try {
-      const r = await fetch("http://127.0.0.1:8188/cmf2ps/del_ref", {
+      const r = await fetch(getComfyUrl("/cmf2ps/del_ref"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -559,6 +643,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const chkTwoLevelLayout = document.getElementById("chkTwoLevelLayout");
   const chkAutoUpdatePreview = document.getElementById("chkAutoUpdatePreview");
   const localeSelect = document.getElementById("localeSelect");
+  const serverAddressInput = document.getElementById("serverAddress");
 
   function applyTwoLevelLayout(enabled) {
     if (!main) return;
@@ -587,6 +672,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bAutoUpdatePreview,
   );
   chkAutoUpdatePreview.checked = bAutoUpdatePreview;
+  setComfyServerAddressText(loadComfyServerAddress());
 
   if (btnOpenSettings && dlg) {
     btnOpenSettings.addEventListener("click", async () => {
@@ -628,6 +714,17 @@ document.addEventListener("DOMContentLoaded", () => {
         saveSetting(SETTINGS_KEYS.locale, locale);
         syncLocaleSelect();
       }
+    });
+  }
+
+  if (serverAddressInput) {
+    // Сохраняем на change/blur: так сработает и Enter, и уход фокуса из поля.
+    serverAddressInput.addEventListener("change", (e) => {
+      saveComfyServerAddress(e.target.value);
+    });
+
+    serverAddressInput.addEventListener("blur", (e) => {
+      saveComfyServerAddress(e.target.value);
     });
   }
 
@@ -931,6 +1028,16 @@ async function applySelectedPreview() {
     perfEnd(p4);
   });
 }
+
+document
+  .getElementById("btnResetAddress")
+  .addEventListener("click", async () => {
+    try {
+      saveComfyServerAddress("");
+    } catch (err) {
+      console.error("ComfyUI error:", err);
+    }
+  });
 
 document
   .getElementById("btnApplyPreview")
@@ -1844,9 +1951,16 @@ async function exportSnapshotMask() {
 
 function ensureComfyLoaded() {
   document.addEventListener("DOMContentLoaded", () => {
-    const wv = document.getElementById("comfyWeb");
-    wv.src = `http://127.0.0.1:8188/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`;
+    reloadComfyWeb();
   });
+}
+
+function reloadComfyWeb() {
+  const wv = document.getElementById("comfyWeb");
+  if (!wv) return;
+
+  // client_id нужен backend-ноде, чтобы отправлять generate именно в этот webview.
+  wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
 }
 
 async function runWorkflow() {
@@ -1855,7 +1969,7 @@ async function runWorkflow() {
     const response = await fetch("workflow\\workflow_template_api.json");
     const workflow = await response.json();
     // 2. Отправляем в ComfyUI
-    const comfyResponse = await fetch("http://127.0.0.1:8188/prompt", {
+    const comfyResponse = await fetch(getComfyUrl("/prompt"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -2111,8 +2225,8 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   let correctionWidth = correction;
   let correctionHeight = correction;
   if (
-    snapshotSize.width != (Math.max(8, Math.floor(toPx(imgWidth) / 8) * 8)) &&
-    snapshotSize.height != (Math.max(8, Math.floor(toPx(imgHeight) / 8) * 8)) &&
+    snapshotSize.width != Math.max(8, Math.floor(toPx(imgWidth) / 8) * 8) &&
+    snapshotSize.height != Math.max(8, Math.floor(toPx(imgHeight) / 8) * 8) &&
     bResizeLayer == true
   ) {
     correctionWidth = correction * (snapshotSize.width / imgWidth);
@@ -2317,7 +2431,7 @@ async function entryToBase64(entry) {
 }
 
 async function pushSnapshotToComfy(b64) {
-  const r = await fetch("http://127.0.0.1:8188/cmf2ps/push_image", {
+  const r = await fetch(getComfyUrl("/cmf2ps/push_image"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -2332,7 +2446,7 @@ async function pushSnapshotToComfy(b64) {
 }
 
 async function pushInpaintMaskToComfy(b64) {
-  const r = await fetch("http://127.0.0.1:8188/cmf2ps/push_mask", {
+  const r = await fetch(getComfyUrl("/cmf2ps/push_mask"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -2347,7 +2461,7 @@ async function pushInpaintMaskToComfy(b64) {
 }
 
 async function pushRefToComfy(b64, sFilename, sRefresh) {
-  const r = await fetch("http://127.0.0.1:8188/cmf2ps/push_ref", {
+  const r = await fetch(getComfyUrl("/cmf2ps/push_ref"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -2369,7 +2483,7 @@ async function waitForUiClient(timeoutMs = 5000) {
 
   while (Date.now() - started < timeoutMs) {
     try {
-      const r = await fetch("http://127.0.0.1:8188/cmf2ps/clients");
+      const r = await fetch(getComfyUrl("/cmf2ps/clients"));
       const j = await r.json();
 
       const found =
@@ -2470,9 +2584,16 @@ function enqueueWsMessage(msg) {
 
 function connectWs() {
   if (isConnecting) return;
+  if (
+    ws &&
+    (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
+  ) {
+    return;
+  }
+
   isConnecting = true;
 
-  ws = new WebSocket(WS_URL);
+  ws = new WebSocket(getComfyWsUrl());
 
   ws.onopen = () => {
     isConnecting = false;
@@ -2499,11 +2620,35 @@ function connectWs() {
   ws.onclose = () => {
     isConnecting = false;
     console.warn("[CMF2PS] WS closed, reconnect in 1s");
-    setTimeout(connectWs, 1000);
+    wsReconnectTimer = setTimeout(connectWs, 1000);
   };
 }
 
+// При смене адреса закрываем старый сокет без отложенного reconnect и сразу подключаем новый.
+function reconnectWs() {
+  if (wsReconnectTimer) {
+    clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = null;
+  }
+
+  const currentWs = ws;
+  ws = null;
+  isConnecting = false;
+
+  if (currentWs) {
+    currentWs.onclose = null;
+    try {
+      currentWs.close();
+    } catch (e) {
+      console.warn("[CMF2PS] failed to close WS:", e);
+    }
+  }
+
+  connectWs();
+}
+
 // вызов при старте
+loadComfyServerAddress();
 connectWs();
 ensureComfyLoaded();
 initControls();

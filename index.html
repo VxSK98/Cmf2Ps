@@ -391,9 +391,20 @@
           <sp-textfield
             id="serverAddress"
             class="backend-path-field"
-            readonly
             placeholder="http://127.0.0.1:8188"
           ></sp-textfield>
+          <div class="padding-down"></div>
+          <sp-action-button
+              id="btnResetAddress"
+              class="settings-toggle-btn"
+              data-i18n-title="titles.reset"
+              title="По умолчанию"
+            >
+              <img
+                src="images/uxp_refresh.png"
+                class="icon-btn-settings"
+              />
+            </sp-action-button>
         </div>
         <div class="padding-down"></div>
         <div class="mask-frame">
@@ -466,7 +477,7 @@
           <div class="settings-section">
             <h3 data-i18n="labels.about">О программе</h3>
             <div class="padding-down"></div>
-            <div class="settings-hint">Cmf2Ps ver 1.0.0(Re)</div>
+            <div class="settings-hint">Cmf2Ps ver 1.1.0.dev01(Beta)</div>
             <div class="settings-hint">
               <a
                 id="authorLink"
