@@ -413,27 +413,39 @@ async function installComfyNode() {
 
   // Backend лежит внутри плагина, поэтому читаем его из read-only plugin folder.
   const pluginFolder = await fs.getPluginFolder();
-  const backendFolder = await pluginFolder.getEntry("backend");
-  const sourceNodeFolder = await backendFolder.getEntry("comfyui-cmf2ps");
 
-  // Если папка ноды уже установлена, сначала удаляем ее содержимое и саму папку.
-  // copyTo с allowFolderCopy не всегда заменяет существующую папку рекурсивно.
+  // Удаляем текущую папку ноды
   let installedNodeFolder = null;
+  let installedNodeFolderOld = null;
   try {
-    installedNodeFolder = await customNodesFolder.getEntry("comfyui-cmf2ps");
+    installedNodeFolder = await customNodesFolder.getEntry("Cmf2Ps");
+    installedNodeFolderOld = await customNodesFolder.getEntry("comfyui-cmf2ps");
   } catch (err) {
-    console.log("[CMF2PS] comfyui-cmf2ps is not installed yet:", err);
+    console.log(err);
   }
-
+  if (installedNodeFolderOld) {
+    await deleteEntryRecursive(installedNodeFolderOld);
+  }
   if (installedNodeFolder) {
     await deleteEntryRecursive(installedNodeFolder);
   }
+  // Создаем Cmf2Ps и копируем только backend payload для ComfyUI.
+  const targetNodeFolder = await customNodesFolder.createFolder("Cmf2Ps");
+  const backendEntries = [
+    "__init__.py",
+    "cmf2ps_backend.py",
+    "cmf2ps_nodes.py",
+    "locales",
+    "js",
+  ];
 
-  // Копируем всю папку ноды в custom_nodes уже как новую установку.
-  await sourceNodeFolder.copyTo(customNodesFolder, {
-    overwrite: true,
-    allowFolderCopy: true,
-  });
+  for (const entryName of backendEntries) {
+    const sourceEntry = await pluginFolder.getEntry(entryName);
+    await sourceEntry.copyTo(targetNodeFolder, {
+      overwrite: true,
+      allowFolderCopy: sourceEntry.isFolder,
+    });
+  }
 }
 
 ///////////////////////////////////////
