@@ -7,7 +7,7 @@ window.CMF2PS_LOCALES.ru = {
     inpaintMaskMode: "Режим InpaintMask",
     addRef: "Добавить реф",
     send: "Отправить",
-    applySelected: "Применить выбранное",
+    applySelected: "Применить превью",
     installBackend: "Установить backend и ноды",
   },
   labels: {
