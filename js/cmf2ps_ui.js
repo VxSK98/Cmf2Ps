@@ -2,7 +2,28 @@ import { app } from "../../../scripts/app.js";
 
 (() => {
   const params = new URLSearchParams(window.location.search);
-  const clientId = params.get("cmf2ps_client") || "ui_default";
+  // Ключ для хранения ID конкретного встроенного окна ComfyUI.
+  // sessionStorage переживает reload, но не передаётся другим вкладкам.
+  const CLIENT_ID_STORAGE_KEY = "cmf2ps_ui_client_id";
+  // При первом открытии Photoshop передаёт уникальный ID в адресе страницы.
+  const clientIdFromUrl = params.get("cmf2ps_client");
+  // Здесь будет ID, сохранённый до перезагрузки страницы.
+  let storedClientId = null;
+
+  try {
+    // Восстанавливаем ID, если текущий URL уже не содержит параметр.
+    storedClientId = window.sessionStorage.getItem(CLIENT_ID_STORAGE_KEY);
+    if (clientIdFromUrl) {
+      // Запоминаем ID из Photoshop для последующих полных refresh.
+      window.sessionStorage.setItem(CLIENT_ID_STORAGE_KEY, clientIdFromUrl);
+    }
+  } catch (e) {
+    // Не прерываем работу, если среда webview отключила sessionStorage.
+    console.warn("[CMF2PS_UI] sessionStorage is unavailable", e);
+  }
+
+  // Приоритет: ID из URL -> сохранённый ID -> запасной ID для обычного ComfyUI.
+  const clientId = clientIdFromUrl || storedClientId || "ui_default";
 
   // UI открыт из самого Comfy, поэтому websocket цепляем к текущему host, а не к localhost.
   const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -70,7 +91,11 @@ import { app } from "../../../scripts/app.js";
       }
 
       if (msg?.type === "refresh_inputs_full") {
-        window.location.reload();
+        // Явно добавляем ID в URL: ComfyUI не сможет потерять его при reload.
+        const reloadUrl = new URL(window.location.href);
+        reloadUrl.searchParams.set("cmf2ps_client", clientId);
+        // replace не создаёт лишнюю запись в истории браузера webview. Заменяем на ранее сохраненный параметр
+        window.location.replace(reloadUrl.toString());
         return;
       }
 

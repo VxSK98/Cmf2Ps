@@ -31,7 +31,7 @@ window.CMF2PS_LOCALES.ru = {
   hints: {
     twoLevelLayout: "Выносит окно предпросмотра в отдельную правую колонку",
     autoUpdatePreview: "При получении данных из comfy автоматически переключается на крайний результат",
-    serverAddress: "Адрес сервера",
+    serverAddress: "Адрес сервера (Beta)",
   },
   placeholders: {
     refFilename: "Название файла.png",

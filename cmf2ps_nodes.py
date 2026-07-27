@@ -91,8 +91,14 @@ def _load_rgb_image(path: str):
     return img.size, tensor
 
 def _load_mask_image(path: str, width: int, height: int):
-    img = Image.open(path)
-    img = ImageOps.exif_transpose(img).convert("L")
+    if not path or not os.path.isfile(path):
+        return _empty_mask(width, height)
+
+    try:
+        img = Image.open(path)
+        img = ImageOps.exif_transpose(img).convert("L")
+    except (OSError, ValueError, TypeError):
+        return _empty_mask(width, height)
 
     if img.size != (width, height):
         img = img.resize((width, height), Image.Resampling.BILINEAR)
