@@ -1965,14 +1965,24 @@ function ensureComfyLoaded() {
   document.addEventListener("DOMContentLoaded", () => {
     reloadComfyWeb();
   });
+  const wv = document.getElementById("comfyWeb");
+  wv.addEventListener("loaderror", (e) => {           
+    if (isConnecting) {
+      wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`);
+      // wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
+    }
+    // console.log("[CMF2PS] ComfyUI web interface", isConnecting);
+    // console.log(`comfyWeb.loaderror ${e.url}, code:${e.code}, message:${e.message}`);
+});
 }
 
 function reloadComfyWeb() {
   const wv = document.getElementById("comfyWeb");
   if (!wv) return;
-
+  // console.log("reloadComfyWeb");
   // client_id нужен backend-ноде, чтобы отправлять generate именно в этот webview.
-  wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
+  // wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
+  wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`);
 }
 
 async function runWorkflow() {
@@ -2604,12 +2614,13 @@ function connectWs() {
   }
 
   isConnecting = true;
-
+//  console.log("[CMF2PS] WS Test");
   ws = new WebSocket(getComfyWsUrl());
 
   ws.onopen = () => {
-    isConnecting = false;
+    isConnecting = true;
     console.log("[CMF2PS] WS connected");
+    reloadComfyWeb();
     ws.send(JSON.stringify({ type: "hello" }));
     // можно ping
     ws.send(JSON.stringify({ type: "ping" }));
