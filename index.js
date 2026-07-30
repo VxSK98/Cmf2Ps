@@ -1,4 +1,4 @@
-const { app, core, action } = require("photoshop");
+const { app, core, action, constants } = require("photoshop");
 const { storage } = require("uxp");
 const fs = storage.localFileSystem;
 const formats = storage.formats;
@@ -448,6 +448,37 @@ async function installComfyNode() {
   }
 }
 
+////////////////////////////
+
+// Импорт макросов
+
+const {
+  commandsMakeMaskMerge5p01,
+  commandsMakeMaskMerge5p02,
+  commandsAddInpaintMask,
+  commandsPrepareLayerToCrop,
+  commandsPrepareLayerToCropMMAS3,
+  commandsMakeInpaintMask,
+  commandsMakeInpaintMaskMMAS3,
+  commandsFixBackground,
+  commandsFixBackgroundMMAS3,
+  commandsSetRGB,
+  commandsMakeRef,
+  // commandsSendBitmapToMask,
+  commandsMaskFromImage,
+  commandApplyMask,
+  commandSelDown,
+  commandSelUp,
+  commandDelLayer,
+  commandsSelectMask,
+  commandNewLayerTemp,
+  commandMaskFix,
+  commandQSelectMask,
+  commandSelectMaskDownLayer,
+  commandApplyMask2,
+  commandConvertToRGBMod,
+} = require("./macros");
+
 ///////////////////////////////////////
 
 // Клик по кнопкам
@@ -464,6 +495,19 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
     clearPreview();
     await deleteLayerIfExists("cmf2ps_preview");
     firstRender = true;
+    if (app.activeDocument.mode === constants.DocumentMode.INDEXEDCOLOR) {
+      await require("photoshop").core.executeAsModal(
+        async () => {
+          await require("photoshop").action.batchPlay(
+            commandConvertToRGBMod,
+            {},
+          );
+        },
+        {
+          commandName: "Action Commands",
+        },
+      );
+    }
     if ((await hasSelection()) == false) {
       await require("photoshop").core.executeAsModal(selectAll, {
         commandName: "Action Commands",
@@ -590,36 +634,6 @@ document
       console.error("InpaintMask toggle error:", err);
     }
   });
-
-////////////////////////////
-
-// Импорт макросов
-
-const {
-  commandsMakeMaskMerge5p01,
-  commandsMakeMaskMerge5p02,
-  commandsAddInpaintMask,
-  commandsPrepareLayerToCrop,
-  commandsPrepareLayerToCropMMAS3,
-  commandsMakeInpaintMask,
-  commandsMakeInpaintMaskMMAS3,
-  commandsFixBackground,
-  commandsFixBackgroundMMAS3,
-  commandsSetRGB,
-  commandsMakeRef,
-  // commandsSendBitmapToMask,
-  commandsMaskFromImage,
-  commandApplyMask,
-  commandSelDown,
-  commandSelUp,
-  commandDelLayer,
-  commandsSelectMask,
-  commandNewLayerTemp,
-  commandMaskFix,
-  commandQSelectMask,
-  commandSelectMaskDownLayer,
-  commandApplyMask2,
-} = require("./macros");
 
 ////////////////////////////
 
@@ -1966,14 +1980,16 @@ function ensureComfyLoaded() {
     reloadComfyWeb();
   });
   const wv = document.getElementById("comfyWeb");
-  wv.addEventListener("loaderror", (e) => {           
+  wv.addEventListener("loaderror", (e) => {
     if (isConnecting) {
-      wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`);
+      wv.src = getComfyUrl(
+        `/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`,
+      );
       // wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
     }
     // console.log("[CMF2PS] ComfyUI web interface", isConnecting);
     // console.log(`comfyWeb.loaderror ${e.url}, code:${e.code}, message:${e.message}`);
-});
+  });
 }
 
 function reloadComfyWeb() {
@@ -1982,7 +1998,9 @@ function reloadComfyWeb() {
   // console.log("reloadComfyWeb");
   // client_id нужен backend-ноде, чтобы отправлять generate именно в этот webview.
   // wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}`);
-  wv.src = getComfyUrl(`/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`);
+  wv.src = getComfyUrl(
+    `/?cmf2ps_client=${encodeURIComponent(UI_CLIENT_ID)}&cmf2ps_retry=${Date.now()}`,
+  );
 }
 
 async function runWorkflow() {
@@ -2614,7 +2632,7 @@ function connectWs() {
   }
 
   isConnecting = true;
-//  console.log("[CMF2PS] WS Test");
+  //  console.log("[CMF2PS] WS Test");
   ws = new WebSocket(getComfyWsUrl());
 
   ws.onopen = () => {

@@ -1044,7 +1044,7 @@ const commandApplyMask2 = [
       _value: "revealSelection",
     },
   },
-   // Задать Выделение
+  // Задать Выделение
   {
     _obj: "set",
     _target: [
@@ -1060,6 +1060,16 @@ const commandApplyMask2 = [
       _value: "targetEnum",
     },
     version: 1,
+  },
+];
+
+const commandConvertToRGBMod = [
+  // Режим конвертирования
+  {
+    _obj: "convertMode",
+    to: {
+      _class: "RGBColorMode",
+    },
   },
 ];
 
@@ -1087,4 +1097,5 @@ module.exports = {
   commandQSelectMask,
   commandSelectMaskDownLayer,
   commandApplyMask2,
+  commandConvertToRGBMod,
 };
