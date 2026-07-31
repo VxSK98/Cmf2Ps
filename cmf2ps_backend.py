@@ -35,7 +35,6 @@ _clients_lock = asyncio.Lock()
 # "активный" PS-клиент (последний подключившийся platform=ps)
 _active_ps_client_id: Optional[str] = None
 
-
 def _temp_file_path(filename: str) -> str:
     """ComfyUI temp dir + защита от ../ path traversal."""
     safe_name = os.path.basename(filename)
@@ -100,9 +99,11 @@ async def broadcast(payload: dict, *, platform: Optional[str] = None) -> int:
 
     return delivered
 
-
+# Отправляем запросы клиенту comfy. Запросы comfy обрабатываются в cmf2ps_ui.js
 async def send_to_client(client_id: str, payload: dict) -> bool:
     """Отправка JSON конкретному клиенту по client_id."""
+    global _active_ps_client_id
+
     msg = json.dumps(payload, ensure_ascii=False)
 
     async with _clients_lock:
@@ -123,6 +124,8 @@ async def send_to_client(client_id: str, payload: dict) -> bool:
     except Exception:
         async with _clients_lock:
             _clients.pop(client_id, None)
+            if _active_ps_client_id == client_id:
+                _active_ps_client_id = None
         return False
 
 
@@ -167,7 +170,9 @@ async def send_preview_image(filename: str, width: Optional[int] = None, height:
             payload["width"] = int(width)
             payload["height"] = int(height)
 
-        target = await wait_for_active_ps_client(timeout=5.0)
+        target = await _get_active_ps_client_id()
+        if not target:
+            target = await wait_for_active_ps_client(timeout=5.0)
         if target:
             ok = await send_to_client(target, payload)
             return {"ok": ok, "target": target, "filename": base_name, "width": width, "height": height}
@@ -200,7 +205,7 @@ async def send_preview_done() -> dict:
         "source": "cmf2ps"
     }
 
-    target = await _get_active_ps_client_id()
+    target = await wait_for_active_ps_client(timeout=5.0)
     if target:
         ok = await send_to_client(target, payload)
         return {"ok": ok, "target": target}
@@ -247,8 +252,9 @@ async def cmf2ps_ws(request):
     platform = request.rel_url.query.get("platform", "unknown")
     client_id = request.rel_url.query.get("client_id") or f"{platform}_{id(ws)}"
 
+    connected_at = time.time()
     async with _clients_lock:
-        _clients[client_id] = {"ws": ws, "platform": platform, "ts": time.time()}
+        _clients[client_id] = {"ws": ws, "platform": platform, "ts": connected_at}
 
         # последний подключившийся PS становится "активным"
         if platform == "ps":
@@ -484,7 +490,7 @@ async def cmf2ps_del_ref(request):
             "filename": safe_name,
             "path": path,
         }, status=500)
-
+    print ("refresh_inputs_full, " + target)
     ok = await send_to_client(target, {"type": "refresh_inputs_full"})
     return web.json_response({
         "ok": True,

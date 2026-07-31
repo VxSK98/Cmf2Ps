@@ -4,18 +4,21 @@ const fs = storage.localFileSystem;
 const formats = storage.formats;
 
 const DEFAULT_COMFY_SERVER_ADDRESS = "http://127.0.0.1:8188";
-const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`; // Имя клиента comfy внутри uxp 
 
 // http://127.0.0.1:8188/cmf2ps/clients  - адрес подключенных клиентов
 
 let ws = null;
 let isConnecting = false;
 let wsReconnectTimer = null;
+let isCheckingPsConnection = false;
 // Очередь не дает async-обработчикам WebSocket накладываться друг на друга.
 let wsMessageQueue = Promise.resolve();
 let firstRender = true;
 let bSnapshot = false;
 let bSelectInCenter = true;
+
+let wsInit = false; // При первом запусе
 
 let imageMask;
 
@@ -267,7 +270,7 @@ function getComfyHttpBase() {
   return comfyServerAddress || loadComfyServerAddress();
 }
 
-// Все HTTP-запросы к Comfy должны проходить через эту функцию, а не собирать localhost руками.
+// Все HTTP-запросы к беку должны проходить через эту функцию
 function getComfyUrl(path = "/") {
   const base = getComfyHttpBase().replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -2577,15 +2580,15 @@ async function handleWsMessage(msg) {
     if (docPPI != imgPPI) {
       await require("photoshop").core.executeAsModal(setPPI72, {});
     }
-    console.log("docPPI", docPPI);
+    // console.log("docPPI", docPPI);
     //
     // selectedPreviewIndex++;
     if (bSnapshot == true) {
       addPreviewItem(msg.filename, msg.data, msg.width, msg.height);
 
-      console.log("msg.width", msg.width);
-      console.log("msg.height", msg.height);
-      // console.log("msg.data", msg.data);
+      // console.log("msg.width", msg.width);
+      // console.log("msg.height", msg.height);
+      // console.log("preview_item", msg.data);
       if (firstRender == true) {
         console.log("firstRender");
         await addPreviewLayer();
@@ -2622,6 +2625,30 @@ function enqueueWsMessage(msg) {
     });
 }
 
+async function checkPsConnection() {
+  if (isCheckingPsConnection) return;
+  isCheckingPsConnection = true;
+  try {
+    const response = await fetch(getComfyUrl("/cmf2ps/ping"));
+    if (!response.ok) return;
+
+    const status = await response.json();
+    const socketIsOpen = ws && ws.readyState === WebSocket.OPEN;
+    if (status.active_ps === null && socketIsOpen) {
+      // WebSocket мог остаться «открытым» в UXP, хотя backend уже потерял
+      // его запись. Закрываем такой сокет и регистрируем новый.
+      console.warn("[CMF2PS] backend lost active PS client, reconnecting WS");
+      reconnectWs();
+    }
+  } catch (e) {
+    // Сервер может быть выключен или перезапускаться — следующая проверка
+    // повторит попытку, поэтому здесь достаточно записи в консоль.
+    console.warn("[CMF2PS] failed to check PS connection:", e);
+  } finally {
+    isCheckingPsConnection = false;
+  }
+}
+
 function connectWs() {
   if (isConnecting) return;
   if (
@@ -2638,12 +2665,17 @@ function connectWs() {
   ws.onopen = () => {
     isConnecting = true;
     console.log("[CMF2PS] WS connected");
-    reloadComfyWeb();
+
+    // Костыль при первом запуске если установили связь, то принудительно обновляем веб для быстрой прогрузки
+    if (wsInit === false) {
+      reloadComfyWeb();
+      wsInit = true;
+    }
     ws.send(JSON.stringify({ type: "hello" }));
     // можно ping
     ws.send(JSON.stringify({ type: "ping" }));
   };
-
+  ////// !!! Получаем сообщение. Все посылки из бека попадают сюда
   ws.onmessage = (ev) => {
     try {
       const msg = JSON.parse(ev.data);
@@ -2691,5 +2723,6 @@ function reconnectWs() {
 // вызов при старте
 loadComfyServerAddress();
 connectWs();
+setInterval(checkPsConnection, 3000);
 ensureComfyLoaded();
 initControls();
