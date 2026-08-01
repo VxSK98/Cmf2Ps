@@ -30,12 +30,18 @@
         "tooltip": "Latest inpaint mask received from Photoshop"
       },
       "2": {
-        "name": "width",
+        "name": "width8",
         "tooltip": "Snapshot width rounded down to a multiple of 8"
       },
       "3": {
-        "name": "height",
+        "name": "height8",
         "tooltip": "Snapshot height rounded down to a multiple of 8"
+      },
+      "4": {
+        "name": "width"
+      },
+      "5": {
+        "name": "height"
       }
     }
   },

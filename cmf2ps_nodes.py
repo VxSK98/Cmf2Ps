@@ -413,8 +413,8 @@ class CMF2PS_LoadImage:
             "required": {}
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK", "INT", "INT")
-    RETURN_NAMES = ("image", "mask", "width", "height")
+    RETURN_TYPES = ("IMAGE", "MASK", "INT", "INT", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "width8", "height8", "width", "height")
     FUNCTION = "load"
     CATEGORY = "CMF2PS"
 
@@ -431,7 +431,7 @@ class CMF2PS_LoadImage:
             w, h = 8, 8
             _, image_tensor = _empty_rgb_image(w, h)
             mask_tensor = _empty_mask(w, h)
-            return (image_tensor, mask_tensor, w, h)
+            return (image_tensor, mask_tensor, w, h, w, h)
 
         (w, h), image_tensor = _load_rgb_image(path)
 
@@ -447,7 +447,7 @@ class CMF2PS_LoadImage:
         w8 = max(8, (w // 8) * 8)
         h8 = max(8, (h // 8) * 8)
 
-        return (image_tensor, mask_tensor, w8, h8)
+        return (image_tensor, mask_tensor, w8, h8, w, h)
 
     @classmethod
     def IS_CHANGED(s, client_id="ps"):

@@ -4,7 +4,7 @@ const fs = storage.localFileSystem;
 const formats = storage.formats;
 
 const DEFAULT_COMFY_SERVER_ADDRESS = "http://127.0.0.1:8188";
-const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`; // Имя клиента comfy внутри uxp 
+const UI_CLIENT_ID = `psui_${Date.now()}_${Math.floor(Math.random() * 1e9)}`; // Имя клиента comfy внутри uxp
 
 // http://127.0.0.1:8188/cmf2ps/clients  - адрес подключенных клиентов
 
@@ -645,7 +645,15 @@ document
 //     const p1 = perfStart("btnTest");
 //     await runAsSingleHistoryState("CMF2PS btnTest", async () => {
 //       // await selectMask();
-//       await appendMask();
+//       const imageMaskBase64 = await entryToBase64(imageMask);
+//       const imageMaskBytes = await base64ToUint8Array(imageMaskBase64);
+//       await require("photoshop").action.batchPlay(commandsSetRGB, {}); // Переключение на rgb чинит некоторые глюки при inpaintmask
+//       await require("photoshop").core.executeAsModal(selectAll, {
+//         commandName: "Action Commands",
+//       });
+//       await openImgInPS(imageMaskBytes, "_mask");
+//       // await resetTransform();
+//       // await centerActiveLayer();
 //       // await require("photoshop").action.batchPlay(commandQSelectMask, {});
 //     });
 
@@ -1016,9 +1024,14 @@ async function applySelectedPreview() {
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
     await require("photoshop").action.batchPlay(commandsSetRGB, {}); // Переключение на rgb чинит некоторые глюки при inpaintmask
+    // Если выделить весь кадр перед импортом маски, то она автоматом станет в центр и не нужно будет сдвигать слой
+    await require("photoshop").core.executeAsModal(selectAll, {
+      commandName: "Action Commands",
+    });
     await openImgInPS(imageMaskBytes, item.filename + "_mask");
-    await resetTransform();
-    await centerActiveLayer();
+    // await resetTransform();
+    // await centerActiveLayer();
+
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
@@ -1090,9 +1103,14 @@ async function addPreviewLayer() {
     perfEnd(p1);
     const p2 = perfStart("импорт маски");
     await require("photoshop").action.batchPlay(commandsSetRGB, {}); // Переключение на rgb чинит некоторые глюки при inpaintmask
+
+    await require("photoshop").core.executeAsModal(selectAll, {
+      commandName: "Action Commands",
+    });
     await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask");
-    await resetTransform();
-    await centerActiveLayer();
+    // await resetTransform();
+    // await centerActiveLayer();
+    
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
@@ -1164,6 +1182,8 @@ async function centerActiveLayer() {
   const offsetX = docCenterX - layerCenterX;
   const offsetY = docCenterY - layerCenterY;
 
+  console.log("docCenterX", docCenterX);
+  console.log("docCenterY", docCenterY);
   console.log("layerCenterX", layerCenterX);
   console.log("layerCenterY", layerCenterY);
   console.log("offsetX", offsetX);

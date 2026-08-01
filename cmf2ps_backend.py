@@ -99,7 +99,6 @@ async def broadcast(payload: dict, *, platform: Optional[str] = None) -> int:
 
     return delivered
 
-# Отправляем запросы клиенту comfy. Запросы comfy обрабатываются в cmf2ps_ui.js
 async def send_to_client(client_id: str, payload: dict) -> bool:
     """Отправка JSON конкретному клиенту по client_id."""
     global _active_ps_client_id
@@ -170,13 +169,14 @@ async def send_preview_image(filename: str, width: Optional[int] = None, height:
             payload["width"] = int(width)
             payload["height"] = int(height)
 
-        target = await _get_active_ps_client_id()
+        target = await _get_active_ps_client_id() 
+        print ("_get_active_ps_client_id = " + target)
         if not target:
             target = await wait_for_active_ps_client(timeout=5.0)
         if target:
             ok = await send_to_client(target, payload)
             return {"ok": ok, "target": target, "filename": base_name, "width": width, "height": height}
-
+        
         delivered = await broadcast(payload, platform="ps")
         return {"ok": delivered > 0, "delivered": delivered, "filename": base_name, "width": width, "height": height}
 
