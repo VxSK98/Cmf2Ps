@@ -40,6 +40,7 @@ let imgPPI = 72;
 let generationCount = 1;
 let maskBlurValue = 6.0;
 let maskPaddingValue = 8;
+let currentPaddingValue = 0;
 // let mask2PaddingValue = 4;
 
 let selectedAspect = "1024x1024";
@@ -496,6 +497,10 @@ document.getElementById("btnSnapshot").addEventListener("click", async () => {
     const p1 = perfStart("btnSnapshot perf");
 
     clearPreview();
+    let docPPI = app.activeDocument.resolution;
+    if (docPPI != imgPPI) {
+      await require("photoshop").core.executeAsModal(setPPI72, {});
+    }
     await deleteLayerIfExists("cmf2ps_preview");
     firstRender = true;
     if (app.activeDocument.mode === constants.DocumentMode.INDEXEDCOLOR) {
@@ -1107,10 +1112,11 @@ async function addPreviewLayer() {
     await require("photoshop").core.executeAsModal(selectAll, {
       commandName: "Action Commands",
     });
+
     await openImgInPS(imageMaskBytes, "cmf2ps_preview_mask");
     // await resetTransform();
     // await centerActiveLayer();
-    
+
     // await require("photoshop").core.executeAsModal(qSelectMask, {
     //   commandName: "qSelectMask",
     // });
@@ -1151,6 +1157,13 @@ async function applyMaskInCurrentModal() {
   } else {
     await delTempMask();
   }
+}
+
+async function scaleDoc(value) {
+  const doc = app.activeDocument;
+  const docWidth = doc.width;
+  const docHeight = doc.height;
+  await doc.resizeImage(docWidth * value, docHeight * value);
 }
 
 async function centerActiveLayer() {
@@ -1895,13 +1908,18 @@ async function makeMaskAndSnapshot3(imgName, bInpaintMask) {
         commandsPrepareLayerToCropMMAS3,
         {},
       );
-      await layerPlusPaddingCrop();
 
       const docCrop = app.activeDocument;
+      await layerPlusPaddingCrop();
       snapshotSize = {
-        width: Math.max(8, Math.floor(toPx(docCrop.width) / 8) * 8),
-        height: Math.max(8, Math.floor(toPx(docCrop.height) / 8) * 8),
+        width: docCrop.width - maskPaddingValue * 2,
+        height: docCrop.height - maskPaddingValue * 2,
       };
+      currentPaddingValue = maskPaddingValue;
+      // snapshotSize8 = {
+      //   width: Math.max(8, Math.floor(toPx(docCrop.width) / 8) * 8),
+      //   height: Math.max(8, Math.floor(toPx(docCrop.height) / 8) * 8),
+      // };
       console.log("snapshotSize", snapshotSize);
       perfEnd(p3);
       // 4) Cохраняем кроп (это и есть clipboard-doc)
@@ -2271,12 +2289,12 @@ async function setResizeDuringPlace(enabled) {
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
 async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const file = await writeTempPng(bytes, nameLayer);
-  const targetDoc = app.activeDocument;
+  const doc = app.activeDocument;
   const docPPI = app.activeDocument.resolution;
   const ppiFactor = docPPI / 72;
 
-  const docW = Math.round(toPx(targetDoc.width));
-  const docH = Math.round(toPx(targetDoc.height));
+  const docW = Math.round(toPx(doc.width));
+  const docH = Math.round(toPx(doc.height));
   const sel = getSelectionCenter();
 
   const autoFit = Math.min(
@@ -2288,27 +2306,40 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   let correctionWidth = correction;
   let correctionHeight = correction;
   if (
-    snapshotSize.width != Math.max(8, Math.floor(toPx(imgWidth) / 8) * 8) &&
-    snapshotSize.height != Math.max(8, Math.floor(toPx(imgHeight) / 8) * 8) &&
+    Math.max(8, (snapshotSize.width + currentPaddingValue * 2) / 8) * 8 !=
+      Math.floor(toPx(imgWidth)) &&
+    Math.max(8, (snapshotSize.height + currentPaddingValue * 2) / 8) * 8 !=
+      Math.floor(toPx(imgHeight)) &&
     bResizeLayer == true
   ) {
-    correctionWidth = correction * (snapshotSize.width / imgWidth);
-    correctionHeight = correction * (snapshotSize.height / imgHeight);
+    correctionWidth =
+      correction * ((snapshotSize.width + currentPaddingValue * 2) / imgWidth);
+    correctionHeight =
+      correction *
+      ((snapshotSize.height + currentPaddingValue * 2) / imgHeight);
   }
 
   const prevResizeDuringPlace = await getResizeDuringPlace();
   await setResizeDuringPlace(false);
 
   // console.log("[CMF2PS] imgPPI", imgPPI);
-  // console.log("[CMF2PS] docPPI", docPPI);
-  // console.log("[CMF2PS] imgWidth", imgWidth);
-  // console.log("[CMF2PS] imgHeight", imgHeight);
-  // console.log("[CMF2PS] snapshotSize", snapshotSize);
-  // console.log("[CMF2PS] docSize", { width: docW, height: docH });
-  // console.log("[CMF2PS] selection", sel);
-  // console.log("[CMF2PS] autoFit", autoFit);
-  // console.log("[CMF2PS] correctionWidth", correctionWidth);
-  // console.log("[CMF2PS] correctionHeight", correctionHeight);
+  console.log("[CMF2PS] docPPI", docPPI);
+  console.log("[CMF2PS] imgWidth", imgWidth);
+  console.log("[CMF2PS] imgHeight", imgHeight);
+  // console.log(
+  //   "[CMF2PS] snapshotSize8Width",
+  //   Math.max(8, (snapshotSize.width + currentPaddingValue * 2) / 8) * 8,
+  // );
+  // console.log(
+  //   "[CMF2PS] snapshotSize8Height",
+  //   Math.max(8, (snapshotSize.height + currentPaddingValue * 2) / 8) * 8,
+  // );
+  console.log("[CMF2PS] snapshotSize", snapshotSize);
+  console.log("[CMF2PS] docSize", { width: docW, height: docH });
+  console.log("[CMF2PS] selection", sel);
+  console.log("[CMF2PS] autoFit", autoFit);
+  console.log("[CMF2PS] correctionWidth", correctionWidth);
+  console.log("[CMF2PS] correctionHeight", correctionHeight);
 
   const token = await fs.createSessionToken(file);
 
@@ -2595,10 +2626,6 @@ async function handleWsMessage(msg) {
       }
       await exportSnapshotMask();
       bSnapshot = true;
-    }
-    let docPPI = app.activeDocument.resolution;
-    if (docPPI != imgPPI) {
-      await require("photoshop").core.executeAsModal(setPPI72, {});
     }
     // console.log("docPPI", docPPI);
     //

@@ -1,9 +1,10 @@
 <!doctype html>
 <html>
   <head>
+    <!-- Вынес css вотдельный файл -->
     <link rel="stylesheet" href="index.css" />
-    <!-- Подключение css -->
     <script src="uxp_locales/ru.js"></script>
+    <!-- <script src="uxp_locales/uk.js"></script> -->
     <script src="uxp_locales/en.js"></script>
     <script src="index.js"></script>
   </head>
@@ -121,6 +122,9 @@
             </div>
           </div>
         </div>
+        <!-- <div class="toolbar-frame">
+          <sp-action-button id="btnTest">Test</sp-action-button>
+        </div> -->
         <div class="toolbar-frame">
           <!-- <sp-checkbox id="chkInpaintMaskMod">Режим InpaintMask</sp-checkbox> -->
           <div class="main-action-row">
@@ -152,10 +156,7 @@
                 >Паддинг слоя +</span
               >
               <div class="slider-inline">
-                <img
-                  src="images/cmf2ps_maskPadding2.png"
-                  class="slider-icon"
-                />
+                <img src="images/cmf2ps_maskPadding2.png" class="slider-icon" />
                 <span id="maskPaddingValue" class="slider-value">8</span>
                 <input
                   id="maskPaddingSlider"
@@ -219,10 +220,7 @@
           <div class="padding-down"></div>
           <div class="mask-frame">
             <div class="main-action-row">
-              <img
-                src="images/cmf2ps_inpaintMask2.png"
-                class="slider-icon"
-              />
+              <img src="images/cmf2ps_inpaintMask2.png" class="slider-icon" />
               <div class="padding-8px"></div>
               <sp-action-button
                 id="btnInpaintMaskMod"
@@ -234,7 +232,6 @@
               >
             </div>
           </div>
-          <!-- <sp-action-button id="btnTest">Test</sp-action-button> -->
         </div>
 
         <div class="ref-frame">
@@ -395,16 +392,13 @@
           ></sp-textfield>
           <div class="padding-down"></div>
           <sp-action-button
-              id="btnResetAddress"
-              class="settings-toggle-btn"
-              data-i18n-title="titles.reset"
-              title="По умолчанию"
-            >
-              <img
-                src="images/uxp_refresh.png"
-                class="icon-btn-settings"
-              />
-            </sp-action-button>
+            id="btnResetAddress"
+            class="settings-toggle-btn"
+            data-i18n-title="titles.reset"
+            title="По умолчанию"
+          >
+            <img src="images/uxp_refresh.png" class="icon-btn-settings" />
+          </sp-action-button>
         </div>
         <div class="padding-down"></div>
         <div class="mask-frame">
@@ -415,10 +409,7 @@
               data-i18n-title="titles.browse"
               title="Обзор"
             >
-              <img
-                src="images/cmf2ps_folder.png"
-                class="icon-btn-settings"
-              />
+              <img src="images/cmf2ps_folder.png" class="icon-btn-settings" />
             </sp-action-button>
             <div class="padding-down"></div>
             <sp-textfield
@@ -449,10 +440,11 @@
           >
           <div class="main-action-row">
             <select id="localeSelect" class="locale-select">
-              <option value="ru" data-i18n="labels.languageRu">Русский</option>
-              <option value="en" data-i18n="labels.languageEn">
-                Английский
-              </option>
+              <option value="ru">Rus</option>
+              <!-- <option value="uk">Ukr</option> -->
+              <!-- <option value="pl">Pol</option> -->
+              <option value="en">Eng</option>
+              <!-- <option value="de">Deu</option> -->
             </select>
             <div class="padding-down"></div>
           </div>
@@ -477,7 +469,7 @@
           <div class="settings-section">
             <h3 data-i18n="labels.about">О программе</h3>
             <div class="padding-down"></div>
-            <div class="settings-hint">Cmf2Ps ver 1.1.2(Net)</div>
+            <div class="settings-hint">Cmf2Ps ver 1.1.5-dev01(Beta)</div>
             <div class="settings-hint">
               <a
                 id="authorLink"
