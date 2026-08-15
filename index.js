@@ -2305,10 +2305,19 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const correction = ((1 / autoFit) * 100) / ppiFactor;
   let correctionWidth = correction;
   let correctionHeight = correction;
+  // Math.max(8, Math.floor(toPx(docCrop.width) / 8) * 8),
   if (
-    Math.max(8, (snapshotSize.width + currentPaddingValue * 2) / 8) * 8 !=
+    Math.max(
+      8,
+      Math.floor((snapshotSize.width + currentPaddingValue * 2) / 8),
+    ) *
+      8 !=
       Math.floor(toPx(imgWidth)) &&
-    Math.max(8, (snapshotSize.height + currentPaddingValue * 2) / 8) * 8 !=
+    Math.max(
+      8,
+      Math.floor((snapshotSize.height + currentPaddingValue * 2) / 8),
+    ) *
+      8 !=
       Math.floor(toPx(imgHeight)) &&
     bResizeLayer == true
   ) {
@@ -2323,23 +2332,17 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   await setResizeDuringPlace(false);
 
   // console.log("[CMF2PS] imgPPI", imgPPI);
-  console.log("[CMF2PS] docPPI", docPPI);
-  console.log("[CMF2PS] imgWidth", imgWidth);
-  console.log("[CMF2PS] imgHeight", imgHeight);
-  // console.log(
-  //   "[CMF2PS] snapshotSize8Width",
-  //   Math.max(8, (snapshotSize.width + currentPaddingValue * 2) / 8) * 8,
-  // );
-  // console.log(
-  //   "[CMF2PS] snapshotSize8Height",
-  //   Math.max(8, (snapshotSize.height + currentPaddingValue * 2) / 8) * 8,
-  // );
-  console.log("[CMF2PS] snapshotSize", snapshotSize);
-  console.log("[CMF2PS] docSize", { width: docW, height: docH });
-  console.log("[CMF2PS] selection", sel);
-  console.log("[CMF2PS] autoFit", autoFit);
-  console.log("[CMF2PS] correctionWidth", correctionWidth);
-  console.log("[CMF2PS] correctionHeight", correctionHeight);
+  // console.log("[CMF2PS] docPPI", docPPI);
+  // console.log("[CMF2PS] imgWidth", imgWidth);
+  // console.log("[CMF2PS] imgHeight", imgHeight);
+  // console.log("[CMF2PS] snapshotSize8Width", snapshotSize8WidthPadding);
+  // console.log("[CMF2PS] snapshotSize8Height", snapshotSize8HeightPadding);
+  // console.log("[CMF2PS] snapshotSize", snapshotSize);
+  // console.log("[CMF2PS] docSize", { width: docW, height: docH });
+  // console.log("[CMF2PS] selection", sel);
+  // console.log("[CMF2PS] autoFit", autoFit);
+  // console.log("[CMF2PS] correctionWidth", correctionWidth);
+  // console.log("[CMF2PS] correctionHeight", correctionHeight);
 
   const token = await fs.createSessionToken(file);
 
