@@ -41,9 +41,15 @@ def _temp_file_path(filename: str) -> str:
     return os.path.join(folder_paths.get_temp_directory(), safe_name)
 
 
-def _input_ref_path(filename: str) -> Tuple[str, str]:
+def _input_ref_path(filename: str, preserve_extension: bool = False) -> Tuple[str, str]:
+    # Старые вызовы сохраняют имя с .png; Image Search передаёт True для исходного формата.
+    # Убираем каталоги из имени, чтобы файл всегда оставался непосредственно в input.
     safe_name = os.path.basename(str(filename).replace("\\", "/")) or "ref.png"
-    if not safe_name.lower().endswith(".png"):
+    extension = os.path.splitext(safe_name)[1].lower()
+    image_extensions = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
+    if preserve_extension and extension not in image_extensions:
+        raise ValueError("unsupported_image_extension")
+    if not preserve_extension and extension != ".png":
         safe_name = f"{os.path.splitext(safe_name)[0]}.png"
 
     input_dir = os.path.abspath(folder_paths.get_input_directory())
@@ -425,7 +431,7 @@ async def cmf2ps_push_ref(request):
         return web.json_response({"ok": False, "error": "bad_base64", "details": str(e)}, status=400)
 
     try:
-        safe_name, client_path = _input_ref_path(filename)
+        safe_name, client_path = _input_ref_path(filename, data.get("preserve_extension") is True)
     except ValueError:
         return web.json_response({"ok": False, "error": "bad_filename"}, status=400)
 

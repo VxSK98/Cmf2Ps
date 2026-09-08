@@ -1,7 +1,7 @@
 {
   "id": "Cmf2Ps",
   "name": "Cmf2Ps",
-  "version": "1.1.5",
+  "version": "1.3.0",
   "main": "index.html",
   "manifestVersion": 6,
   "host": {
@@ -9,38 +9,25 @@
     "minVersion": "23.0.0"
   },
   "requiredPermissions": {
-		"localFileSystem": "fullAccess",
-		"launchProcess": {
-			"schemes": [
-				"https",
-				"slack",
-				"file",
-				"ws",
-				"mailto"
-			],
-			"extensions": [
-				".xd",
-				".psd",
-        ".png",
-				".bat",
-				".cmd",
-				".sh"
-			]
-		},
-		"network": {
-			"domains": "all"
-		},
-		"clipboard": "readAndWrite",
-		"webview": {
-			"allow": "yes",
-			"domains": "all",
-			"enableMessageBridge": "localAndRemote"
-		},
-		"ipc": {
-			"enablePluginCommunication": true
-		},
-		"allowCodeGenerationFromStrings": true
-	},
+    "localFileSystem": "fullAccess",
+    "launchProcess": {
+      "schemes": ["http", "https", "slack", "file", "ws", "mailto"],
+      "extensions": [".xd", ".psd", ".png", ".bat", ".cmd", ".sh"]
+    },
+    "network": {
+      "domains": "all"
+    },
+    "clipboard": "readAndWrite",
+    "webview": {
+      "allow": "yes",
+      "domains": "all",
+      "enableMessageBridge": "localAndRemote"
+    },
+    "ipc": {
+      "enablePluginCommunication": true
+    },
+    "allowCodeGenerationFromStrings": true
+  },
   "entrypoints": [
     {
       "type": "panel",
@@ -80,6 +67,15 @@
           "species": ["generic"]
         }
       ]
+    },
+    {
+      "type": "panel",
+      "id": "imageSearchPanel",
+      "label": "Image Search",
+      "minimumSize": { "width": 360, "height": 400 },
+      "maximumSize": { "width": 2000, "height": 2000 },
+      "preferredDockedSize": { "width": 400, "height": 520 },
+      "preferredFloatingSize": { "width": 360, "height": 620 }
     }
   ],
   "icons": [

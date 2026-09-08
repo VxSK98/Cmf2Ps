@@ -1,0 +1,55 @@
+<!-- Фрагмент загружается plugin-panels.js в отдельную панель; события связывает image-search.js. -->
+<section class="image-search-panel" aria-label="Image search">
+  <header class="image-search-header">
+    <div>
+      <div class="image-search-header-actions">
+        <!-- <h1 class="image-search-title">Image Search</h1> -->
+        <!-- <p class="image-search-subtitle">Google и Яндекс · SerpApi</p> -->
+      </div>
+    </div>
+    <!-- <div class="image-search-header-actions"> -->
+    <!-- <sp-action-button id="imageSearchSettingsButton" quiet>Настройки</sp-action-button> -->
+    <!-- <sp-action-button id="imageSearchResetButton" quiet>Сброс</sp-action-button> -->
+    <!-- </div> -->
+  </header>
+
+  <!-- ID полей используются обработчиками выбора движка и поиска в image-search.js. -->
+  <div class="image-search-controls">
+    <label class="image-search-field">
+      <!-- <span>Источник</span> -->
+    </label>
+
+    <label class="image-search-field">
+      <!-- <span>Поисковый запрос</span> -->
+      <div class="image-search-query-row">
+        <select id="imageSearchProviderSelect" class="image-search-select">
+          <option value="google">Google Images</option>
+          <option value="yandex">Яндекс Картинки</option>
+        </select>
+        <sp-textfield
+          id="imageSearchQueryField"
+          placeholder="Например: seamless stone texture"
+        ></sp-textfield>
+        <sp-action-button id="imageSearchButton">Поиск</sp-action-button>
+      </div>
+    </label>
+  </div>
+
+  <section class="image-search-preview" aria-label="Preview">
+    <div class="image-search-preview-toolbar">
+      <div class="image-search-preview-title-row">
+        <h2 class="image-search-preview-title">Превью</h2>
+        <sp-action-button id="imageSearchNextButton" disabled
+          >Ещё</sp-action-button
+        >
+      </div>
+      <span id="imageSearchStatus" class="image-search-status"
+        >Ожидает запрос</span
+      >
+    </div>
+    <!-- Начальное пустое состояние. Карточки результатов добавляет функция createResultCard. -->
+    <div id="imageSearchPreviewGrid" class="image-search-preview-grid">
+      <div class="image-search-empty">Здесь появятся результаты поиска</div>
+    </div>
+  </section>
+</section>

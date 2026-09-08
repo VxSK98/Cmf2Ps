@@ -716,9 +716,10 @@ document.addEventListener("DOMContentLoaded", () => {
   chkAutoUpdatePreview.checked = bAutoUpdatePreview;
   setComfyServerAddressText(loadComfyServerAddress());
 
-  if (btnOpenSettings && dlg) {
-    btnOpenSettings.addEventListener("click", async () => {
+  window.CMF2PSShowSettings = async (owner) => {
+      const previousParent = dlg.parentNode;
       try {
+        if (owner) owner.appendChild(dlg);
         syncLocaleSelect();
         setTimeout(syncLocaleSelect, 0);
         setTimeout(syncLocaleSelect, 50);
@@ -726,8 +727,12 @@ document.addEventListener("DOMContentLoaded", () => {
         syncLocaleSelect();
       } catch (e) {
         console.log("settings dialog error:", e);
+      } finally {
+        if (previousParent) previousParent.appendChild(dlg);
       }
-    });
+  };
+  if (btnOpenSettings && dlg) {
+    btnOpenSettings.addEventListener("click", () => window.CMF2PSShowSettings(main));
   }
 
   if (chkTwoLevelLayout) {
@@ -2406,6 +2411,8 @@ async function openImgInPS(bytes, nameLayer) {
   console.log("[CMF2PS] placeEvent result:", res);
 }
 
+window.CMF2PSOpenImgInPS = openImgInPS;
+
 ///////// Функции для превью:
 
 function addPreviewItem(filename, data, width, height) {
@@ -2557,7 +2564,10 @@ async function pushInpaintMaskToComfy(b64) {
   return j;
 }
 
-async function pushRefToComfy(b64, sFilename, sRefresh) {
+// Общая отправка референсов и результатов Image Search в input ComfyUI.
+// sRefresh="auto" обновляет список входных файлов; preserveExtension сохраняет JPEG/WebP и др.
+// Поле png_base64 историческое: передаём байты исходного изображения без перекодирования.
+async function pushRefToComfy(b64, sFilename, sRefresh, preserveExtension = false) {
   const r = await fetch(getComfyUrl("/cmf2ps/push_ref"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2567,13 +2577,20 @@ async function pushRefToComfy(b64, sFilename, sRefresh) {
       filename: sFilename,
       png_base64: b64,
       refresh_mode: sRefresh,
+      preserve_extension: preserveExtension,
       delete_item: false,
     }),
   });
   const j = await r.json().catch(() => ({}));
   console.log("[CMF2PS] push_ref:", r.status, j);
+  if (!r.ok || j.ok !== true) {
+    throw new Error(`ComfyUI: ${j.error || `HTTP ${r.status}`}`);
+  }
   return j;
 }
+
+window.CMF2PSPushRefToComfy = pushRefToComfy;
+window.CMF2PSBytesToBase64 = uint8ToBase64;
 
 async function waitForUiClient(timeoutMs = 5000) {
   const started = Date.now();
