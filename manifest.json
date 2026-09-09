@@ -11,7 +11,7 @@
   "requiredPermissions": {
     "localFileSystem": "fullAccess",
     "launchProcess": {
-      "schemes": ["http", "https", "slack", "file", "ws", "mailto"],
+      "schemes": ["https", "slack", "file", "ws", "mailto"],
       "extensions": [".xd", ".psd", ".png", ".bat", ".cmd", ".sh"]
     },
     "network": {
@@ -33,22 +33,10 @@
       "type": "panel",
       "id": "mainPanel",
       "label": "Cmf2Ps",
-      "minimumSize": {
-        "width": 560,
-        "height": 520
-      },
-      "maximumSize": {
-        "width": 2000,
-        "height": 2000
-      },
-      "preferredDockedSize": {
-        "width": 560,
-        "height": 520
-      },
-      "preferredFloatingSize": {
-        "width": 1000,
-        "height": 620
-      },
+      "minimumSize": { "width": 560, "height": 520 },
+      "maximumSize": { "width": 2000, "height": 2000 },
+      "preferredDockedSize": { "width": 560, "height": 520 },
+      "preferredFloatingSize": { "width": 1000, "height": 620 },
       "icons": [
         {
           "width": 32,
@@ -75,7 +63,25 @@
       "minimumSize": { "width": 360, "height": 400 },
       "maximumSize": { "width": 2000, "height": 2000 },
       "preferredDockedSize": { "width": 400, "height": 520 },
-      "preferredFloatingSize": { "width": 360, "height": 620 }
+      "preferredFloatingSize": { "width": 360, "height": 620 },
+      "icons": [
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/cmf2ps_main.png",
+          "scale": [1, 2],
+          "theme": ["dark", "darkest"],
+          "species": ["generic"]
+        },
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/cmf2ps_main.png",
+          "scale": [1, 2],
+          "theme": ["lightest", "light"],
+          "species": ["generic"]
+        }
+      ]
     }
   ],
   "icons": [

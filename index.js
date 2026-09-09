@@ -150,6 +150,8 @@ const SETTINGS_KEYS = {
   customNodesPath: "cmf2ps_custom_nodes_path",
   autoUpdatePreview: "cmf2ps_auto_update_preview",
   comfyServerAddress: "cmf2ps_comfy_server_address",
+  provider: "cmf2ps.imageSearch.serpapi.provider",
+  query: "cmf2ps.imageSearch.query",
 };
 
 // Безопасная запись настройки: если localStorage недоступен, плагин продолжит работать.
@@ -169,6 +171,21 @@ function loadSetting(key) {
     console.log("Failed to load setting:", key, e);
     return null;
   }
+}
+
+// Синхронизируем свойства и атрибуты select/option для корректного отображения в UXP.
+function selectProvider(select, value) {
+  Array.from(select.options).forEach((option, index) => {
+    const selected = option.getAttribute("value") === value;
+    option.selected = selected;
+    if (selected) {
+      option.setAttribute("selected", "selected");
+      select.selectedIndex = index;
+    } else {
+      option.removeAttribute("selected");
+    }
+  });
+  select.value = value;
 }
 
 function normalizePngFilename(value) {
@@ -670,7 +687,7 @@ document
 
 ////////////////////////////
 
-// Настройки
+// Окно настроек
 document.addEventListener("DOMContentLoaded", () => {
   const savedLocale = loadSetting(SETTINGS_KEYS.locale);
   if (savedLocale) {
@@ -686,6 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const chkAutoUpdatePreview = document.getElementById("chkAutoUpdatePreview");
   const localeSelect = document.getElementById("localeSelect");
   const serverAddressInput = document.getElementById("serverAddress");
+  const providerSelect = document.getElementById("imageSearchProviderSelect");
 
   function applyTwoLevelLayout(enabled) {
     if (!main) return;
@@ -717,22 +735,24 @@ document.addEventListener("DOMContentLoaded", () => {
   setComfyServerAddressText(loadComfyServerAddress());
 
   window.CMF2PSShowSettings = async (owner) => {
-      const previousParent = dlg.parentNode;
-      try {
-        if (owner) owner.appendChild(dlg);
-        syncLocaleSelect();
-        setTimeout(syncLocaleSelect, 0);
-        setTimeout(syncLocaleSelect, 50);
-        await dlg.showModal();
-        syncLocaleSelect();
-      } catch (e) {
-        console.log("settings dialog error:", e);
-      } finally {
-        if (previousParent) previousParent.appendChild(dlg);
-      }
+    const previousParent = dlg.parentNode;
+    try {
+      if (owner) owner.appendChild(dlg);
+      syncLocaleSelect();
+      setTimeout(syncLocaleSelect, 0);
+      setTimeout(syncLocaleSelect, 50);
+      await dlg.showModal();
+      syncLocaleSelect();
+    } catch (e) {
+      console.log("settings dialog error:", e);
+    } finally {
+      if (previousParent) previousParent.appendChild(dlg);
+    }
   };
   if (btnOpenSettings && dlg) {
-    btnOpenSettings.addEventListener("click", () => window.CMF2PSShowSettings(main));
+    btnOpenSettings.addEventListener("click", () =>
+      window.CMF2PSShowSettings(main),
+    );
   }
 
   if (chkTwoLevelLayout) {
@@ -740,7 +760,13 @@ document.addEventListener("DOMContentLoaded", () => {
       applyTwoLevelLayout(!!e.target.checked);
     });
   }
-
+  if (providerSelect) {
+    providerSelect.addEventListener("change", () => {
+      const provider = providerSelect.value;
+      console.log("[Image Search] change:", provider);
+      saveSetting(SETTINGS_KEYS.provider, provider);
+    });
+  }
   if (chkAutoUpdatePreview) {
     chkAutoUpdatePreview.addEventListener("change", (e) => {
       bAutoUpdatePreview = e.target.checked;
@@ -776,7 +802,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   loadTwoLevelLayout();
-
+  selectProvider(
+    providerSelect,
+    loadSetting(SETTINGS_KEYS.provider) || "google",
+  );
   updateThemeIcons();
   watchThemeChanges();
 });
@@ -2291,6 +2320,74 @@ async function setResizeDuringPlace(enabled) {
   );
 }
 
+async function openImgInPSImgSrch(bytes, nameLayer, imgWidth, imgHeight) {
+  const file = await writeTempPng(bytes, nameLayer);
+  const doc = app.activeDocument;
+  const docPPI = app.activeDocument.resolution;
+  const ppiFactor = docPPI / 72;
+
+  if ((await hasSelection()) == false) {
+    await require("photoshop").core.executeAsModal(selectAll, {
+      commandName: "Action Commands",
+    });
+  }
+
+  const docW = Math.round(toPx(doc.width));
+  const docH = Math.round(toPx(doc.height));
+
+  const bounds = doc.selection.bounds;
+
+  const selWidth = bounds.right - bounds.left;
+  const selHeight = bounds.bottom - bounds.top;
+
+  const autoFit = Math.min(1, docW / selWidth, docH / selHeight);
+  const correction = ((1 / autoFit) * 100) / ppiFactor;
+  let correctionWidth = correction;
+  let correctionHeight = correction;
+  // Math.max(8, Math.floor(toPx(docCrop.width) / 8) * 8),
+  correctionWidth = correction * (selWidth / imgWidth);
+  correctionHeight = correction * (selHeight / imgHeight);
+
+  const prevResizeDuringPlace = await getResizeDuringPlace();
+  await setResizeDuringPlace(false);
+
+  const token = await fs.createSessionToken(file);
+
+  const res = await action.batchPlay(
+    [
+      {
+        _obj: "placeEvent",
+        null: {
+          _kind: "local",
+          _path: token,
+        },
+        linked: false,
+        freeTransformCenterState: {
+          _enum: "quadCenterState",
+          _value: "QCSAverage",
+        },
+        width: {
+          _unit: "percentUnit",
+          _value: correctionWidth,
+        },
+        height: {
+          _unit: "percentUnit",
+          _value: correctionHeight,
+        },
+        _options: {
+          dialogOptions: "dontDisplay",
+        },
+      },
+    ],
+    {
+      synchronousExecution: true,
+      modalBehavior: "execute",
+    },
+  );
+  setResizeDuringPlace(prevResizeDuringPlace);
+  console.log("[CMF2PS] placeEvent result", res);
+}
+
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
 async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const file = await writeTempPng(bytes, nameLayer);
@@ -2410,8 +2507,6 @@ async function openImgInPS(bytes, nameLayer) {
   );
   console.log("[CMF2PS] placeEvent result:", res);
 }
-
-window.CMF2PSOpenImgInPS = openImgInPS;
 
 ///////// Функции для превью:
 
@@ -2567,7 +2662,12 @@ async function pushInpaintMaskToComfy(b64) {
 // Общая отправка референсов и результатов Image Search в input ComfyUI.
 // sRefresh="auto" обновляет список входных файлов; preserveExtension сохраняет JPEG/WebP и др.
 // Поле png_base64 историческое: передаём байты исходного изображения без перекодирования.
-async function pushRefToComfy(b64, sFilename, sRefresh, preserveExtension = false) {
+async function pushRefToComfy(
+  b64,
+  sFilename,
+  sRefresh,
+  preserveExtension = false,
+) {
   const r = await fetch(getComfyUrl("/cmf2ps/push_ref"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2588,9 +2688,6 @@ async function pushRefToComfy(b64, sFilename, sRefresh, preserveExtension = fals
   }
   return j;
 }
-
-window.CMF2PSPushRefToComfy = pushRefToComfy;
-window.CMF2PSBytesToBase64 = uint8ToBase64;
 
 async function waitForUiClient(timeoutMs = 5000) {
   const started = Date.now();
