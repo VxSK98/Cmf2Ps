@@ -1073,6 +1073,24 @@ const commandConvertToRGBMod = [
   },
 ];
 
+const commandSelectLayer = [
+  // Задать Выделение
+  {
+    _obj: "set",
+    _target: [
+      {
+        _property: "selection",
+        _ref: "channel",
+      },
+    ],
+    to: {
+      _enum: "channel",
+      _ref: "channel",
+      _value: "transparencyEnum",
+    },
+  },
+];
+
 module.exports = {
   commandsMakeMaskMerge5p01,
   commandsMakeMaskMerge5p02,
@@ -1098,4 +1116,5 @@ module.exports = {
   commandSelectMaskDownLayer,
   commandApplyMask2,
   commandConvertToRGBMod,
+  commandSelectLayer,
 };

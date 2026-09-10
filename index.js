@@ -498,6 +498,7 @@ const {
   commandSelectMaskDownLayer,
   commandApplyMask2,
   commandConvertToRGBMod,
+  commandSelectLayer,
 } = require("./macros");
 
 ///////////////////////////////////////
@@ -2115,9 +2116,18 @@ function base64ToUint8Array(base64) {
   return bytes;
 }
 
-async function writeTempPng(bytes, filename = "_temp.png") {
+// Эта версия пишет в PluginData и не удаляет файлы после завершении сессии
+async function writePng(bytes, filename = "_temp.png") {
   const dataFolder = await fs.getDataFolder();
   const file = await dataFolder.createFile(filename, { overwrite: true });
+  await file.write(bytes, { format: formats.binary });
+  return file;
+}
+
+// Файлы импорта нужны только в текущей сессии. UXP очищает эту папку
+async function writeTempPng(bytes, filename = "_temp.png") {
+  const tempFolder = await fs.getTemporaryFolder();
+  const file = await tempFolder.createFile(filename, { overwrite: true });
   await file.write(bytes, { format: formats.binary });
   return file;
 }
@@ -2320,74 +2330,50 @@ async function setResizeDuringPlace(enabled) {
   );
 }
 
-async function openImgInPSImgSrch(bytes, nameLayer, imgWidth, imgHeight) {
-  const file = await writeTempPng(bytes, nameLayer);
+// Вызывается внутри executeAsModal. Размеры выдачи и PPI не нужны:
+// масштабируем уже размещённый слой по его фактическим границам.
+async function openImgInPSImgSrch(bytes, nameLayer) {
   const doc = app.activeDocument;
-  const docPPI = app.activeDocument.resolution;
-  const ppiFactor = docPPI / 72;
-
-  if ((await hasSelection()) == false) {
-    await require("photoshop").core.executeAsModal(selectAll, {
-      commandName: "Action Commands",
-    });
-  }
-
-  const docW = Math.round(toPx(doc.width));
-  const docH = Math.round(toPx(doc.height));
+  if (!doc) throw new Error("Откройте документ для вставки изображения.");
 
   const bounds = doc.selection.bounds;
+  const target = bounds
+    ? {
+        left: toPx(bounds.left),
+        top: toPx(bounds.top),
+        right: toPx(bounds.right),
+        bottom: toPx(bounds.bottom),
+      }
+    : { left: 0, top: 0, right: toPx(doc.width), bottom: toPx(doc.height) };
+  const targetWidth = target.right - target.left;
+  const targetHeight = target.bottom - target.top;
 
-  const selWidth = bounds.right - bounds.left;
-  const selHeight = bounds.bottom - bounds.top;
-
-  const autoFit = Math.min(1, docW / selWidth, docH / selHeight);
-  const correction = ((1 / autoFit) * 100) / ppiFactor;
-  let correctionWidth = correction;
-  let correctionHeight = correction;
-  // Math.max(8, Math.floor(toPx(docCrop.width) / 8) * 8),
-  correctionWidth = correction * (selWidth / imgWidth);
-  correctionHeight = correction * (selHeight / imgHeight);
-
-  const prevResizeDuringPlace = await getResizeDuringPlace();
-  await setResizeDuringPlace(false);
-
+  const file = await writeTempPng(bytes, nameLayer);
   const token = await fs.createSessionToken(file);
-
-  const res = await action.batchPlay(
+  const [placed] = await action.batchPlay(
     [
       {
         _obj: "placeEvent",
-        null: {
-          _kind: "local",
-          _path: token,
-        },
+        null: { _kind: "local", _path: token },
         linked: false,
-        freeTransformCenterState: {
-          _enum: "quadCenterState",
-          _value: "QCSAverage",
-        },
-        width: {
-          _unit: "percentUnit",
-          _value: correctionWidth,
-        },
-        height: {
-          _unit: "percentUnit",
-          _value: correctionHeight,
-        },
-        _options: {
-          dialogOptions: "dontDisplay",
-        },
+        _options: { dialogOptions: "dontDisplay" },
       },
     ],
-    {
-      synchronousExecution: true,
-      modalBehavior: "execute",
-    },
+    { synchronousExecution: true, modalBehavior: "execute" },
   );
-  setResizeDuringPlace(prevResizeDuringPlace);
-  console.log("[CMF2PS] placeEvent result", res);
+  const layer = doc.activeLayers[0];
+  const initial = layer.boundsNoEffects;
+  const width = toPx(initial.right) - toPx(initial.left);
+  const height = toPx(initial.bottom) - toPx(initial.top);
+  // Независимые проценты растягивают слой точно до габаритов области.
+  await layer.scale((targetWidth / width) * 100, (targetHeight / height) * 100);
+  const scaled = layer.boundsNoEffects;
+  await layer.translate(
+    target.left - toPx(scaled.left),
+    target.top - toPx(scaled.top),
+  );
+  await action.batchPlay(commandSelectLayer, {});
 }
-
 // Открыть PNG и задублировать слой в исходный документ с коррекцией трансформации
 async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
   const file = await writeTempPng(bytes, nameLayer);

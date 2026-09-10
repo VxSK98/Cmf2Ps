@@ -15,6 +15,7 @@ let imageSearchState = {
   nextPageUrl: "",
   search: null,
   seen: new Set(),
+  provider: ""
 };
 
 function setImageSearchStatus(root, text) {
@@ -39,6 +40,7 @@ function delSearch(root) {
   state.nextPageUrl = "";
   state.hasNextPage = false;
   state.seen.clear();
+  state.provider = loadSetting(SETTINGS_KEYS.provider) || "google"
   document.getElementById("imageSearchPreviewGrid").innerHTML =
     '<div class="image-search-empty">Здесь появятся результаты поиска</div>';
   setImageSearchStatus(root, "Ожидает запрос");
@@ -139,7 +141,7 @@ async function insertImageResult(
       return;
     }
     setStatus("Вставляю в Photoshop...");
-    // if (!bResizeLayer) {
+    if (!bResizeLayer) {
       await photoshopCore.executeAsModal(
         async () => {
           await openImgInPS(bytes, filename);
@@ -147,30 +149,20 @@ async function insertImageResult(
         },
         { commandName: "Insert Image Search Result" },
       );
-    // } 
-    // else {
-      // if ((await hasSelection()) == false) {
-      //   await require("photoshop").core.executeAsModal(selectAll, {
-      //     commandName: "Action Commands",
-      //   });
-      // }
-      // await photoshopCore.executeAsModal(
-      //   async () => {
-      //     await openImgInPSImgSrch(
-      //       bytes,
-      //       filename,
-      //       result.width,
-      //       result.height,
-      //     );
-      //   },
-      //   { commandName: "Insert Image Search Result" },
-      // );
-    // }
+    } 
+    else {
+      await photoshopCore.executeAsModal(
+        async () => {
+          await openImgInPSImgSrch(bytes, filename);
+        },
+        { commandName: "Insert Image Search Result" },
+      );
+    }
     setStatus("Картинка вставлена");
   } catch (error) {
     setStatus(
       error.message ||
-        "Не удалось вставить оригинал. Откройте страницу источника.",
+        "Не удалось вставить оригинал.",
     );
   } finally {
     imageSearchState.inserting = false;
@@ -245,7 +237,7 @@ function getSearchParams(root) {
 async function runSearch(root, shouldAppend = false) {
   const state = imageSearchState;
   if (state.busy || (shouldAppend && !state.hasNextPage)) return;
-  const params = getSearchParams(root);
+  let params = getSearchParams(root);
   if (!params.apiKey) {
     setImageSearchStatus(root, "Введите ключ SerpApi.");
     return;
@@ -255,6 +247,9 @@ async function runSearch(root, shouldAppend = false) {
   }
   if (!shouldAppend) {
     delSearch(root);
+  }
+  else if(shouldAppend && state.provider != params.provider){
+    params.provider = state.provider;
   }
   const page = state.page + 1;
   console.log("page = ", page);
