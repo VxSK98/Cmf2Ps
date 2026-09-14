@@ -12,7 +12,7 @@
     "localFileSystem": "fullAccess",
     "launchProcess": {
       "schemes": ["https", "slack", "file", "ws", "mailto"],
-      "extensions": [".xd", ".psd", ".png", ".bat", ".cmd", ".sh"]
+      "extensions": [".xd", ".psd", ".png", ".bat", ".cmd", ".sh", ""]
     },
     "network": {
       "domains": "all"

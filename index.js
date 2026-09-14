@@ -1,5 +1,5 @@
 const { app, core, action, constants } = require("photoshop");
-const { storage } = require("uxp");
+const { storage, shell } = require("uxp");
 const fs = storage.localFileSystem;
 const formats = storage.formats;
 
@@ -17,6 +17,8 @@ let wsMessageQueue = Promise.resolve();
 let firstRender = true;
 let bSnapshot = false;
 let bSelectInCenter = true;
+
+let comfyRefFolder = "";
 
 let wsInit = false; // При первом запусе
 
@@ -357,6 +359,18 @@ function updateThemeIcons2() {
   });
 }
 
+function updateThemeIcons3() {
+  const clearIconPath = isLightTheme()
+    ? "images/cmf2ps_openFolder_light.png"
+    : "images/cmf2ps_openFolder_dark.png";
+
+  document
+    .querySelectorAll('img[data-theme-icon="openFolder"]')
+    .forEach((img) => {
+      img.src = clearIconPath;
+    });
+}
+
 function watchThemeChanges() {
   const tick = () => {
     const current = isLightTheme();
@@ -364,6 +378,7 @@ function watchThemeChanges() {
       lastThemeIsLight = current;
       updateThemeIcons();
       updateThemeIcons2();
+      updateThemeIcons3();
     }
   };
 
@@ -571,6 +586,24 @@ document.getElementById("btnSendRef").addEventListener("click", async () => {
     console.error("ComfyUI error:", err);
   }
 });
+
+document
+  .getElementById("btnOpenRefFolder")
+  .addEventListener("click", async () => {
+    try {
+      const result = await shell.openPath(
+        comfyRefFolder,
+        "Открыть папку input Comfy",
+      );
+      if (result === "") {
+        console.log("Файл успешно открыт");
+      } else {
+        console.error(`Не удалось открыть файл: ${result}`);
+      }
+    } catch (err) {
+      console.error("ComfyUI error:", err);
+    }
+  });
 
 document.getElementById("btnSetBackend").addEventListener("click", async () => {
   try {
@@ -2717,6 +2750,10 @@ async function handleWsMessage(msg) {
     bImageState = true;
     return;
   }
+  if (msg.type === "get_folder") {
+    comfyRefFolder = msg.source;
+    console.log("comfyRefFolder = ", comfyRefFolder);
+  }
 
   if (msg.type === "preview_item") {
     // Несколько preview_item могут прийти почти одновременно, но очередь выше
@@ -2821,6 +2858,7 @@ function connectWs() {
       reloadComfyWeb();
       wsInit = true;
     }
+    ws.send(JSON.stringify({ type: "get_folder" }));
     ws.send(JSON.stringify({ type: "hello" }));
     // можно ping
     ws.send(JSON.stringify({ type: "ping" }));

@@ -60,6 +60,12 @@ def _input_ref_path(filename: str, preserve_extension: bool = False) -> Tuple[st
     return safe_name, os.path.normpath(path)
 
 
+def _input_path() -> Tuple[str]:
+    input_dir = os.path.abspath(folder_paths.get_input_directory())
+    # result = input_dir.replace("\\", "/")
+    return os.path.normpath(input_dir)
+
+
 def _png_size(raw: bytes) -> Optional[Tuple[int, int]]:
     if len(raw) < 24 or raw[:8] != b"\x89PNG\r\n\x1a\n" or raw[12:16] != b"IHDR":
         return None
@@ -289,6 +295,8 @@ async def cmf2ps_ws(request):
                 if isinstance(data, dict) and data.get("type") == "hello" and platform == "ps":
                     async with _clients_lock:
                         _active_ps_client_id = client_id
+                if isinstance(data, dict) and data.get("type") == "get_folder":
+                    await ws.send_str(json.dumps({"type": "get_folder", "source": _input_path()}, ensure_ascii=False))                
 
             elif msg.type == web.WSMsgType.ERROR:
                 break
