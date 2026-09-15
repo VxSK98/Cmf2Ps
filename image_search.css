@@ -171,7 +171,11 @@
   height: 148px;
   border: 1px solid #555;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.02)
+    ),
     var(--uxp-host-background-color);
 }
 
@@ -278,4 +282,22 @@
 .image-search-result-actions sp-action-button {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.image-button {
+  height: 22px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgb(255, 255, 255);
+  font-size: small;
+  line-height: 1;
+}
+
+.image-button:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.image-button:active {
+  background: #454545;
 }

@@ -328,62 +328,42 @@ let lastThemeIsLight = null;
 
 /////////////////////////////////////// Переключатель иконок
 
-function isLightTheme() {
-  const bodyStyle = getComputedStyle(document.body);
-  const bgColor = bodyStyle.backgroundColor;
-  // console.log("bgColor", bgColor);
-  // #535353 #323232
-  if (bgColor == "#F0F0F0" || bgColor == "#B8B8B8") {
-    return true;
-  }
-  return false;
+function isLightTheme(theme = document.theme.getCurrent()) {
+  return theme === "light" || theme === "lightest";
 }
 
-function updateThemeIcons() {
-  const clearIconPath = isLightTheme()
-    ? "images/cmf2ps_clearImg_light@2x.png"
-    : "images/cmf2ps_clearImg_dark@2x.png";
-
+function updateThemeIcons(theme = document.theme.getCurrent()) {
+  let clearIconPath = "images/cmf2ps_clearImg_dark@2x.png";
+  let trashIconPath = "images/cmf2ps_trashBox_dark@2x.png";
+  let openFolderIconPath = "images/cmf2ps_openFolder_dark.png";
+  if (isLightTheme(theme)) {
+    clearIconPath = "images/cmf2ps_clearImg_light@2x.png";
+    trashIconPath = "images/cmf2ps_trashBox_light@2x.png";
+    openFolderIconPath = "images/cmf2ps_openFolder_light.png";
+  }
   document.querySelectorAll('img[data-theme-icon="clear"]').forEach((img) => {
     img.src = clearIconPath;
   });
-}
-
-function updateThemeIcons2() {
-  const clearIconPath = isLightTheme()
-    ? "images/cmf2ps_trashBox_light@2x.png"
-    : "images/cmf2ps_trashBox_dark@2x.png";
 
   document.querySelectorAll('img[data-theme-icon="trash"]').forEach((img) => {
-    img.src = clearIconPath;
+    img.src = trashIconPath;
   });
-}
-
-function updateThemeIcons3() {
-  const clearIconPath = isLightTheme()
-    ? "images/cmf2ps_openFolder_light.png"
-    : "images/cmf2ps_openFolder_dark.png";
 
   document
     .querySelectorAll('img[data-theme-icon="openFolder"]')
     .forEach((img) => {
-      img.src = clearIconPath;
+      img.src = openFolderIconPath;
     });
 }
 
 function watchThemeChanges() {
-  const tick = () => {
-    const current = isLightTheme();
-    if (current !== lastThemeIsLight) {
-      lastThemeIsLight = current;
-      updateThemeIcons();
-      updateThemeIcons2();
-      updateThemeIcons3();
-    }
-  };
+  // начальная установка
+  updateThemeIcons(document.theme.getCurrent());
 
-  tick();
-  setInterval(tick, 1000);
+  // обновление только при реальной смене темы
+  document.theme.onUpdated.addListener((theme) => {
+    updateThemeIcons(theme);
+  });
 }
 ///////////////////////////////////////
 

@@ -205,13 +205,17 @@ function createResultCard(root, result) {
   const actions = document.createElement("div");
   actions.className = "image-search-result-actions";
   const insertButton = document.createElement("sp-action-button");
+  insertButton.className = "image-button";
   insertButton.textContent = "В PS";
+  insertButton.title = "Отправит в Фотошоп";
   insertButton.disabled = !result.imageUrl;
   insertButton.addEventListener("click", () =>
     insertImageResult(root, result, insertButton),
   );
   const comfyButton = document.createElement("sp-action-button");
+  comfyButton.className = "image-button";
   comfyButton.textContent = "В Comfy";
+  comfyButton.title = "Отправит в Comfy";
   comfyButton.disabled = !result.imageUrl;
   comfyButton.addEventListener("click", () =>
     insertImageResult(root, result, comfyButton, "comfy"),
