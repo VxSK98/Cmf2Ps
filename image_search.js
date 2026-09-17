@@ -1,9 +1,9 @@
-﻿// Управление поиском: ввод → SerpApi → карточки → Photoshop или ComfyUI.
-// API и ключ берём из соседних модулей; функции вставки и отправки экспортирует index.js.
-// Загрузка панели и обработчики находятся в этом файле; функции объявлены без обёртки.
+// Управление поиском: ввод → SerpApi → карточки → Photoshop или ComfyUI.
+// API находится в image_search_api.js; настройки и функции вставки — в index.js.
+// Загрузка панели и обработчики находятся в этом файле
 const photoshopCore = require("photoshop").core;
 const { shell: uxpShell } = require("uxp");
-// В localStorage только запрос и поисковик. Ключ хранит image-search-settings.js.
+// Запрос, поисковик и ключ используют общие настройки в localStorage.
 
 // Основная таблица, куда записываются данные о файлах, поиске и состояниях
 let imageSearchState = {
@@ -18,8 +18,17 @@ let imageSearchState = {
   provider: ""
 };
 
-function setImageSearchStatus(root, text) {
+function setImageSearchStatus(root, key, params = {}) {
   const status = document.getElementById("imageSearchStatus");
+  if (key.startsWith("search.")) {
+    status.dataset.i18n = key;
+    status.dataset.i18nParams = JSON.stringify(params);
+  } else {
+    delete status.dataset.i18n;
+    delete status.dataset.i18nParams;
+  }
+  delete status.dataset.i18nTitle;
+  const text = key.startsWith("search.") ? t(key, "", params) : key;
   status.textContent = text;
   status.title = text;
 }
@@ -42,15 +51,16 @@ function delSearch(root) {
   state.seen.clear();
   state.provider = loadSetting(SETTINGS_KEYS.provider) || "google"
   document.getElementById("imageSearchPreviewGrid").innerHTML =
-    '<div class="image-search-empty">Здесь появятся результаты поиска</div>';
-  setImageSearchStatus(root, "Ожидает запрос");
+    '<div class="image-search-empty" data-i18n="search.empty"></div>';
+  applyI18n(root);
+  setImageSearchStatus(root, "search.waiting");
   updateButtons(root);
 }
 
 function formatResultSize(result) {
   return result.width && result.height
     ? `${result.width} × ${result.height}`
-    : "Размер неизвестен";
+    : t("search.unknownSize");
 }
 
 // Определяем формат по сигнатуре: URL может быть без расширения или возвращать HTML.
@@ -72,7 +82,7 @@ function getImageFileExtension(bytes) {
   )
     return ".webp";
   throw new Error(
-    "Источник вернул неподдерживаемый файл вместо PNG/JPEG/WebP/GIF/BMP/TIFF. Откройте страницу источника.",
+    t("search.unsupportedFile"),
   );
 }
 
@@ -86,7 +96,7 @@ async function downloadOriginal(imageUrl) {
         const response = await fetch(imageUrl);
         if (!response.ok)
           throw new Error(
-            `Оригинал недоступен (HTTP ${response.status}). Откройте страницу источника.`,
+            t("search.originalHttp", "", { status: response.status }),
           );
         return new Uint8Array(await response.arrayBuffer());
       })(),
@@ -95,7 +105,7 @@ async function downloadOriginal(imageUrl) {
           () =>
             reject(
               new Error(
-                "Источник не ответил за 45 секунд. Попробуйте другую картинку или откройте страницу источника.",
+                t("search.originalTimeout"),
               ),
             ),
           45000,
@@ -118,14 +128,14 @@ async function insertImageResult(
   const imageUrl = result.insertUrl || result.imageUrl;
   if (!imageUrl || imageSearchState.inserting) return;
   const revision = imageSearchState.revision;
-  const setStatus = (text) => {
+  const setStatus = (text, params) => {
     if (revision === imageSearchState.revision)
-      setImageSearchStatus(root, text);
+      setImageSearchStatus(root, text, params);
   };
   try {
     imageSearchState.inserting = true;
     button.disabled = true;
-    setStatus("Скачиваю оригинал...");
+    setStatus("search.downloading");
     const bytes = await downloadOriginal(imageUrl);
     const extension = getImageFileExtension(bytes);
     const safeId = String(result.id)
@@ -135,12 +145,12 @@ async function insertImageResult(
     // auto обновляет список input в Comfy, true сохраняет расширение на backend.
     // Base64 передаёт исходные байты; перекодирования изображения здесь нет.
     if (destination === "comfy") {
-      setStatus("Отправляю в ComfyUI/input...");
+      setStatus("search.uploading");
       await pushRefToComfy(uint8ToBase64(bytes), filename, "auto", true);
-      setStatus(`Сохранено в ComfyUI/input/${filename}`);
+      setStatus("search.saved", { filename });
       return;
     }
-    setStatus("Вставляю в Photoshop...");
+    setStatus("search.inserting");
     if (!bResizeLayer) {
       await photoshopCore.executeAsModal(
         async () => {
@@ -158,11 +168,11 @@ async function insertImageResult(
         { commandName: "Insert Image Search Result" },
       );
     }
-    setStatus("Картинка вставлена");
+    setStatus("search.inserted");
   } catch (error) {
     setStatus(
       error.message ||
-        "Не удалось вставить оригинал.",
+        t("search.insertFailed"),
     );
   } finally {
     imageSearchState.inserting = false;
@@ -180,25 +190,30 @@ function createResultCard(root, result) {
   thumbWrap.className = "image-search-result-thumb-wrap";
   const image = document.createElement("img");
   image.className = "image-search-result-thumb";
-  image.alt = result.alt || result.host || "Image search result";
+  image.alt = result.alt || result.host || t("search.result");
+  if (!result.alt && !result.host) image.dataset.i18nAlt = "search.result";
   image.addEventListener("error", () => card.classList.add("is-broken"));
   image.src = result.thumbnailUrl;
   const broken = document.createElement("div");
   broken.className = "image-search-result-broken";
-  broken.textContent = "Превью недоступно";
+  broken.dataset.i18n = "search.previewUnavailable";
+  broken.textContent = t("search.previewUnavailable");
   thumbWrap.appendChild(image);
   thumbWrap.appendChild(broken);
   const meta = document.createElement("div");
   meta.className = "image-search-result-meta";
   const title = document.createElement("div");
   title.className = "image-search-result-host";
-  title.textContent = result.alt || "Без названия";
+  title.textContent = result.alt || t("search.untitled");
+  if (!result.alt) title.dataset.i18n = "search.untitled";
   const host = document.createElement("div");
   host.className = "image-search-result-host";
-  host.textContent = result.host || "Источник неизвестен";
+  host.textContent = result.host || t("search.unknownSource");
+  if (!result.host) host.dataset.i18n = "search.unknownSource";
   const size = document.createElement("div");
   size.className = "image-search-result-size";
   size.textContent = formatResultSize(result);
+  if (!result.width || !result.height) size.dataset.i18n = "search.unknownSize";
   meta.appendChild(title);
   meta.appendChild(host);
   meta.appendChild(size);
@@ -206,16 +221,20 @@ function createResultCard(root, result) {
   actions.className = "image-search-result-actions";
   const insertButton = document.createElement("sp-action-button");
   insertButton.className = "image-button";
-  insertButton.textContent = "В PS";
-  insertButton.title = "Отправит в Фотошоп";
+  insertButton.dataset.i18n = "search.toPS";
+  insertButton.textContent = t("search.toPS");
+  insertButton.dataset.i18nTitle = "search.sendPS";
+  insertButton.title = t("search.sendPS");
   insertButton.disabled = !result.imageUrl;
   insertButton.addEventListener("click", () =>
     insertImageResult(root, result, insertButton),
   );
   const comfyButton = document.createElement("sp-action-button");
   comfyButton.className = "image-button";
-  comfyButton.textContent = "В Comfy";
-  comfyButton.title = "Отправит в Comfy";
+  comfyButton.dataset.i18n = "search.toComfy";
+  comfyButton.textContent = t("search.toComfy");
+  comfyButton.dataset.i18nTitle = "search.sendComfy";
+  comfyButton.title = t("search.sendComfy");
   comfyButton.disabled = !result.imageUrl;
   comfyButton.addEventListener("click", () =>
     insertImageResult(root, result, comfyButton, "comfy"),
@@ -232,7 +251,7 @@ function createResultCard(root, result) {
 function getSearchParams(root) {
   return {
     provider: loadSetting(SETTINGS_KEYS.provider) || "google",
-    apiKey: window.CMF2PSImageSearchSettings.getKey(),
+    apiKey: loadSetting(SETTINGS_KEYS.serpApiKey) || "",
     queryText: document.getElementById("imageSearchQueryField").value.trim(),
   };
 }
@@ -243,10 +262,10 @@ async function runSearch(root, shouldAppend = false) {
   if (state.busy || (shouldAppend && !state.hasNextPage)) return;
   let params = getSearchParams(root);
   if (!params.apiKey) {
-    setImageSearchStatus(root, "Введите ключ SerpApi.");
+    setImageSearchStatus(root, "search.enterKey");
     return;
   } else if (!params.queryText) {
-    setImageSearchStatus(root, "Введите поисковый запрос.");
+    setImageSearchStatus(root, "search.enterQuery");
     return;
   }
   if (!shouldAppend) {
@@ -263,7 +282,7 @@ async function runSearch(root, shouldAppend = false) {
   const retryNext = state.hasNextPage;
   state.busy = true;
   updateButtons(root);
-  setImageSearchStatus(root, shouldAppend ? "Загружаю ещё..." : "Ищу...");
+  setImageSearchStatus(root, shouldAppend ? "search.loadingMore" : "search.searching");
   try {
     // Отправляем запрос и ждём ответ
     const response = await searchImages({
@@ -291,19 +310,21 @@ async function runSearch(root, shouldAppend = false) {
     );
     if (!state.seen.size)
       grid.innerHTML =
-        '<div class="image-search-empty">По этому запросу ничего не найдено</div>';
+        '<div class="image-search-empty" data-i18n="search.noResults"></div>';
+    applyI18n(root);
     state.search = { provider: params.provider, queryText: params.queryText };
     state.page = page;
     state.nextPageUrl = response.nextPageUrl;
     state.hasNextPage = response.hasNextPage && results.length > 0;
     setImageSearchStatus(
       root,
-      `${params.provider} - Показано: ${state.seen.size}${state.hasNextPage ? "" : " - Конец выдачи"}`,
+      "search.shown",
+      { provider: params.provider, count: state.seen.size, hasNextPage: state.hasNextPage, end: state.hasNextPage ? "" : t("search.end") },
     );
   } catch (error) {
     if (revision !== state.revision) return;
     state.hasNextPage = shouldAppend && retryNext;
-    setImageSearchStatus(root, error.message || "Ошибка поиска");
+    setImageSearchStatus(root, error.message || t("search.failed"));
   } finally {
     state.busy = false;
     updateButtons(root);
@@ -352,7 +373,11 @@ function showImageSearch(rootNode) {
     searchHost.className = "image-search-host";
   }
   if (searchHost.parentNode !== rootNode) rootNode.appendChild(searchHost);
-  if (searchHost.dataset.initialized === "true" || searchPanelLoading) return;
+  if (searchHost.dataset.initialized === "true") {
+    applyI18n(searchHost);
+    return;
+  }
+  if (searchPanelLoading) return;
 
   // Не задерживаем обработчик show: чтение файла продолжается асинхронно.
   searchPanelLoading = loadImageSearch()
@@ -372,6 +397,7 @@ async function loadImageSearch() {
   searchHost.innerHTML = await file.read();
 
   initImageSearchPanel(searchHost);
+  applyI18n(searchHost);
 }
 
 // Основную панель Photoshop показывает автоматически, здесь регистрируем только дополнительную.

@@ -56,17 +56,27 @@ const refFilename = "ref";
 const DEFAULT_LOCALE = "ru";
 let currentLocale = window.CMF2PS_LOCALE || DEFAULT_LOCALE;
 
-function t(key, fallback = "") {
+function t(key, fallback = "", params = {}) {
   const locale = window.CMF2PS_LOCALES?.[currentLocale] || {};
   const value = key.split(".").reduce((obj, part) => obj?.[part], locale);
 
-  return typeof value === "string" ? value : fallback || key;
+  const text = typeof value === "string" ? value : fallback || key;
+  return text.replace(/\{(\w+)\}/g, (match, name) =>
+    Object.prototype.hasOwnProperty.call(params, name)
+      ? String(params[name])
+      : match,
+  );
 }
 
 // Проходит по DOM и применяет переводы из data-i18n*, оставляя исходный текст fallback'ом.
 function applyI18n(root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => {
-    el.textContent = t(el.dataset.i18n, el.textContent.trim());
+    const params = JSON.parse(el.dataset.i18nParams || "{}");
+    if (el.dataset.i18n === "search.shown") {
+      params.end = params.hasNextPage ? "" : t("search.end");
+    }
+    el.textContent = t(el.dataset.i18n, el.textContent.trim(), params);
+    if (el.id === "imageSearchStatus") el.title = el.textContent;
   });
 
   root.querySelectorAll("[data-i18n-title]").forEach((el) => {
@@ -84,6 +94,15 @@ function applyI18n(root = document) {
     el.setAttribute("placeholder", placeholder);
   });
 
+  root.querySelectorAll("[data-i18n-alt]").forEach((el) => {
+    el.alt = t(el.dataset.i18nAlt);
+  });
+  const selectedAspectItem = document.querySelector(
+    "#aspectDropdownMenu .custom-select-item.selected",
+  );
+  const aspectLabel = document.getElementById("aspectDropdownLabel");
+  if (selectedAspectItem && aspectLabel)
+    aspectLabel.textContent = selectedAspectItem.textContent.trim();
   syncLocaleSelect();
 }
 
@@ -153,6 +172,7 @@ const SETTINGS_KEYS = {
   autoUpdatePreview: "cmf2ps_auto_update_preview",
   comfyServerAddress: "cmf2ps_comfy_server_address",
   provider: "cmf2ps.imageSearch.serpapi.provider",
+  serpApiKey: "cmf2ps.imageSearch.serpapi.apiKey",
   query: "cmf2ps.imageSearch.query",
 };
 
@@ -423,7 +443,7 @@ async function selectCustomNodesFolder() {
 
 async function installComfyNode() {
   const token = loadSetting(SETTINGS_KEYS.customNodesToken);
-  if (!token) throw new Error("Custom nodes folder is not selected");
+  if (!token) throw new Error(t("errors.backendFolder"));
 
   const customNodesFolder = await fs.getEntryForPersistentToken(token);
 
@@ -780,6 +800,27 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("[Image Search] change:", provider);
       saveSetting(SETTINGS_KEYS.provider, provider);
     });
+  }
+  const imageSearchApiKeyField = document.getElementById(
+    "imageSearchApiKeyField",
+  );
+  const imageSearchClearKeyButton = document.getElementById(
+    "imageSearchClearKeyButton",
+  );
+  if (imageSearchApiKeyField) {
+    imageSearchApiKeyField.value = loadSetting(SETTINGS_KEYS.serpApiKey) || "";
+    imageSearchApiKeyField.addEventListener("input", () => {
+      saveSetting(
+        SETTINGS_KEYS.serpApiKey,
+        imageSearchApiKeyField.value.trim(),
+      );
+    });
+    if (imageSearchClearKeyButton) {
+      imageSearchClearKeyButton.addEventListener("click", () => {
+        imageSearchApiKeyField.value = "";
+        saveSetting(SETTINGS_KEYS.serpApiKey, "");
+      });
+    }
   }
   if (chkAutoUpdatePreview) {
     chkAutoUpdatePreview.addEventListener("change", (e) => {
@@ -2347,7 +2388,7 @@ async function setResizeDuringPlace(enabled) {
 // масштабируем уже размещённый слой по его фактическим границам.
 async function openImgInPSImgSrch(bytes, nameLayer) {
   const doc = app.activeDocument;
-  if (!doc) throw new Error("Откройте документ для вставки изображения.");
+  if (!doc) throw new Error(t("errors.openDocument"));
 
   const bounds = doc.selection.bounds;
   const target = bounds
@@ -2731,8 +2772,13 @@ async function handleWsMessage(msg) {
     return;
   }
   if (msg.type === "get_folder") {
-    comfyRefFolder = msg.source;
-    console.log("comfyRefFolder = ", comfyRefFolder);
+    if (comfyServerAddress === DEFAULT_COMFY_SERVER_ADDRESS) {
+      document.getElementById("btnSendRefInFolder").disabled = false;
+      document.getElementById("btnOpenRefFolder").disabled = false;
+      document.getElementById("btnDelRefInFolder").disabled = false;
+      comfyRefFolder = msg.source;
+      console.log("comfyRefFolder = ", comfyRefFolder);
+    }
   }
 
   if (msg.type === "preview_item") {
@@ -2825,6 +2871,10 @@ function connectWs() {
     return;
   }
 
+  document.getElementById("btnSendRefInFolder").disabled = true;
+  document.getElementById("btnOpenRefFolder").disabled = true;
+  document.getElementById("btnDelRefInFolder").disabled = true;
+  
   isConnecting = true;
   //  console.log("[CMF2PS] WS Test");
   ws = new WebSocket(getComfyWsUrl());

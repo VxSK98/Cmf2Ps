@@ -48,12 +48,12 @@
     const apiKey = (params.apiKey || "").trim();
     const queryText = (params.queryText || "").trim();
     const provider = params.provider || "google";
-    if (!apiKey) throw new Error("Введите ключ SerpApi.");
-    if (!queryText) throw new Error("Введите поисковый запрос.");
-    if (!["google", "yandex"].includes(provider)) throw new Error("Неизвестный поисковик.");
+    if (!apiKey) throw new Error(t("search.enterKey"));
+    if (!queryText) throw new Error(t("search.enterQuery"));
+    if (!["google", "yandex"].includes(provider)) throw new Error(t("search.unknownProvider"));
     const page = params.page === undefined ? 0 : params.page;
     if (!Number.isInteger(page) || page < 0 || (provider === "google" && page > 99)) {
-      throw new Error("Недопустимый номер страницы.");
+      throw new Error(t("search.invalidPage"));
     }
     return { apiKey, queryText, provider, page, nextPageUrl: params.nextPageUrl || "" };
   }
@@ -78,7 +78,7 @@
   // В ссылке продолжения сохраняем дополнительные параметры, которые вернул SerpApi.
   function buildSearchUrl(params) {
     const next = params.nextPageUrl && paginationUrl(params.nextPageUrl, params, params.page);
-    if (params.nextPageUrl && !next) throw new Error("Некорректная ссылка следующей страницы SerpApi.");
+    if (params.nextPageUrl && !next) throw new Error(t("search.invalidNext"));
     const url = new URL(next || ENDPOINT);
     url.searchParams.set("engine", `${params.provider}_images`);
     url.searchParams.set(params.provider === "google" ? "q" : "text", params.queryText);
@@ -108,27 +108,27 @@
       response = await fetch(url, { method: "GET" });
     } catch (_) {
       // Исходная ошибка fetch может содержать URL с ключом — её текст не показываем.
-      throw new Error("Не удалось связаться с SerpApi. Проверьте подключение к интернету.");
+      throw new Error(t("search.networkError"));
     }
     try {
       payload = JSON.parse(await response.text());
     } catch (_) {
-      throw new Error(`SerpApi вернул некорректный JSON (HTTP ${response.status}).`);
+      throw new Error(t("search.invalidJson", "", { status: response.status }));
     }
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      throw new Error("Некорректный ответ SerpApi.");
+      throw new Error(t("search.invalidResponse"));
     }
     if (!response.ok || payload.error || payload.search_metadata?.status === "Error") {
       const hints = {
-        401: "Неверный ключ API. Проверьте ключ в кабинете SerpApi.",
-        403: "Доступ запрещён. Проверьте ключ и доступность аккаунта SerpApi.",
-        429: "Исчерпана квота или превышена частота запросов. Проверьте лимиты SerpApi.",
+        401: t("search.unauthorized"),
+        403: t("search.forbidden"),
+        429: t("search.quota"),
       };
-      const raw = typeof payload.error === "string" ? payload.error : "Ошибка выполнения поиска.";
+      const raw = typeof payload.error === "string" ? payload.error : t("search.executionError");
       // Скрываем ключ, если сервис включил его в текст своей ошибки.
-      const message = raw.split(params.apiKey).join("[скрыто]")
-        .split(encodeURIComponent(params.apiKey)).join("[скрыто]")
-        .replace(/api_key=[^&\s"']+/gi, "api_key=[скрыто]");
+      const message = raw.split(params.apiKey).join("[redacted]")
+        .split(encodeURIComponent(params.apiKey)).join("[redacted]")
+        .replace(/api_key=[^&\s"']+/gi, "api_key=[redacted]");
       throw new Error(`SerpApi: ${hints[response.status] || message}`);
     }
     const parsed = parseSerpApiImages(payload, params.provider, params.page);
@@ -147,7 +147,7 @@
       return await Promise.race([
         performSearch(input),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error("SerpApi не ответил за 45 секунд. Повторите запрос.")), 45000);
+          timer = setTimeout(() => reject(new Error(t("search.timeout"))), 45000);
         }),
       ]);
     } finally { clearTimeout(timer); }

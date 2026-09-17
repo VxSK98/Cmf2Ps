@@ -9,7 +9,6 @@
     <script src="uxp_locales/en.js"></script>
     <script src="index.js"></script>
     <script src="image_search_api.js"></script>
-    <script src="image_search_settings.js"></script>
     <script src="image_search.js"></script>
   </head>
   <body>
@@ -179,7 +178,7 @@
 
           <!-- <sp-action-button id="btnStartJson">Генерация json</sp-action-button> -->
           <!-- <sp-action-button id="btnImportImg"
-            >Импорт из ComfyUI</sp-action-button
+             data-i18n="actions.importComfy">Импорт из ComfyUI</sp-action-button
           > -->
           <div class="mask-frame">
             <div class="toolbar-row">
@@ -286,13 +285,15 @@
               data-i18n="actions.send"
               data-i18n-title="titles.sendRefToFolder"
               title="Отправить выделенную область или документ в папку ComfyUI\input"
+              disabled
               >Отправить</sp-action-button
             >
             <div class="padding-down"></div>
             <sp-action-button
               id="btnOpenRefFolder"
               class="settings-toggle-btn"
-              title="Открыть папку ComfyUI\input"
+              title="Открыть папку ComfyUI\input" data-i18n-title="titles.openRefFolder"
+              disabled
             >
               <img
                 src="images/cmf2ps_openFolder_light.png"
@@ -305,6 +306,7 @@
               class="settings-toggle-btn"
               data-i18n-title="titles.deleteRefFromFolder"
               title="Удалить файл по имени в папке ComfyUI\input"
+              disabled
             >
               <img
                 src="images/cmf2ps_trashBox_light@2x.png"
@@ -481,16 +483,16 @@
         </div>
         <div class="padding-down"></div>
         <div class="mask-frame">
-          <h3>Поиск картинок - SerpApi</h3>
+          <h3 data-i18n="labels.search">Поиск картинок - SerpApi</h3>
           <div class="padding-down"></div>
           <div class="main-action-row">
             <sp-textfield
-              id="imageSearchApiKeyField"
+              id="imageSearchApiKeyField" data-i18n-title="titles.apiKey"
               class="backend-path-field"
               type="password"
-              placeholder="Введите ключ SerpApi"
+              placeholder="*****************"
             ></sp-textfield>
-            <sp-action-button id="imageSearchClearKeyButton">
+            <sp-action-button id="imageSearchClearKeyButton" data-i18n-title="titles.clearKey">
               <img
                 src="images/cmf2ps_trashBox_light@2x.png"
                 class="icon-btn-settings"
@@ -498,16 +500,15 @@
               />
             </sp-action-button>
           </div>
-          <div id="imageSearchKeyStatus" class="settings-hint">
-            Ключ хранится в хранилище UXP
-          </div>
           <div class="padding-down"></div>
           <!-- <h3>Поисковая система</h3> -->
           <div class="main-action-row">
-            <div class="settings-hint">Поисковая система</div>
+            <div class="settings-hint" data-i18n="hints.searchProvider">
+              Поисковая система
+            </div>
             <select id="imageSearchProviderSelect" class="image-search-select">
               <option value="google">Google Images</option>
-              <option value="yandex">Яндекс Картинки</option>
+              <option value="yandex" data-i18n="labels.yandex">Яндекс Картинки</option>
             </select>
           </div>
           <div class="padding-down"></div>
@@ -517,7 +518,7 @@
           <div class="settings-section">
             <h3 data-i18n="labels.about">О программе</h3>
             <div class="padding-down"></div>
-            <div class="settings-hint">Cmf2Ps ver 1.3.0-dev05(Beta)</div>
+            <div class="settings-hint">Cmf2Ps ver 1.3.0-dev06(RC)</div>
             <div class="settings-hint">
               <a
                 id="authorLink1"

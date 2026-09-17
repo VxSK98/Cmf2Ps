@@ -42,19 +42,6 @@
 от возможностей установленного Photoshop. Формат определяется по содержимому файла;
 HTML-страницы и неподдерживаемые форматы не передаются в Photoshop.
 
-Реализация: `image-search-api.js`, `image-search-parser.js`, `image-search.js`,
-`image-search.html`, `image-search.css`, `image-search-settings.js`.
-Это прототип с личным ключом пользователя;
-для распространения с общим оплачиваемым ключом обращения следует вынести на backend.
-
-Проверки без ключа и без расхода квоты: `node --test tests/image-search.test.cjs`.
-Проверки сохранения референсов: `python tests/test_push_ref.py`.
-Они проверяют ответы API и поведение панели на имитированных ответах. Для проверки
-в Photoshop: поиск в обоих движках, «Ещё», смена запроса, перезагрузка для проверки
-ключа и вставка оригинала с открытым документом и без него.
-
-Документация: [Google Images](https://serpapi.com/google-images-api),
-[Yandex Images](https://serpapi.com/yandex-images-api).
 
 ## Требования к ComfyUI
 

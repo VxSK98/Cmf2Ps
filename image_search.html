@@ -7,13 +7,7 @@
         <!-- <p class="image-search-subtitle">Google и Яндекс · SerpApi</p> -->
       </div>
     </div>
-    <!-- <div class="image-search-header-actions"> -->
-    <!-- <sp-action-button id="imageSearchSettingsButton" quiet>Настройки</sp-action-button> -->
-    <!-- <sp-action-button id="imageSearchResetButton" quiet>Сброс</sp-action-button> -->
-    <!-- </div> -->
   </header>
-
-  <!-- ID полей используются обработчиками выбора движка и поиска в image-search.js. -->
   <div class="image-search-controls">
     <label class="image-search-field">
       <!-- <span>Источник</span> -->
@@ -22,16 +16,12 @@
     <label class="image-search-field">
       <!-- <span>Поисковый запрос</span> -->
       <div class="image-search-query-row">
-        <!-- <select id="imageSearchProviderSelect" class="image-search-select">
-          <option value="google">Google Images</option>
-          <option value="yandex">Яндекс Картинки</option>
-        </select> -->
         <sp-textfield
           id="imageSearchQueryField"
-          placeholder="Ввод запроса"
+          placeholder="Ввод запроса" data-i18n-placeholder="placeholders.searchQuery"
         ></sp-textfield>
         <div class="padding-down"></div>
-        <sp-action-button id="imageSearchButton">Поиск</sp-action-button>
+        <sp-action-button id="imageSearchButton" data-i18n="actions.searchGo">Поиск</sp-action-button>
       </div>
       <div class="padding-down"></div>
     </label>
@@ -42,17 +32,17 @@
       <div class="image-search-preview-title-row">
         <!-- <h2 class="image-search-preview-title">Превью</h2> -->
         <div class="padding-down"></div>
-        <sp-action-button id="imageSearchNextButton" disabled
+        <sp-action-button id="imageSearchNextButton" data-i18n="actions.searchAdd" disabled
           >Найти ещё</sp-action-button
         >
       </div>
-      <span id="imageSearchStatus" class="image-search-status"
+      <span id="imageSearchStatus" data-i18n="search.waiting" data-i18n-title="search.waiting" class="image-search-status"
         >Ожидает запрос</span
       >
     </div>
     <!-- Начальное пустое состояние. Карточки результатов добавляет функция createResultCard. -->
     <div id="imageSearchPreviewGrid" class="image-search-preview-grid">
-      <div class="image-search-empty">Здесь появятся результаты поиска</div>
+      <div class="image-search-empty" data-i18n="search.empty">Здесь появятся результаты поиска</div>
     </div>
   </section>
 </section>
