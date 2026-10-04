@@ -27,9 +27,9 @@ window.CMF2PS_LOCALES.en = {
     "language": "Language",
     "twoLevelLayout": "Two-Level Layout",
     "autoUpdatePreview": "Auto-update previews",
-    "search": "Image search — SerpApi",
+    "search": "Image search SerpApi",
     "about": "About",
-    "yandex": "Yandex Images"
+    "yandex": "Яндекс Картинки"
   },
   "hints": {
     "twoLevelLayout": "Moves the preview window into a separate right column",

@@ -2384,7 +2384,6 @@ async function setResizeDuringPlace(enabled) {
   );
 }
 
-// Вызывается внутри executeAsModal. Размеры выдачи и PPI не нужны:
 // масштабируем уже размещённый слой по его фактическим границам.
 async function openImgInPSImgSrch(bytes, nameLayer) {
   const doc = app.activeDocument;
@@ -2437,7 +2436,7 @@ async function openImgInPS2(bytes, nameLayer, imgWidth, imgHeight) {
 
   const docW = Math.round(toPx(doc.width));
   const docH = Math.round(toPx(doc.height));
-  const sel = getSelectionCenter();
+  // const sel = getSelectionCenter();
 
   const autoFit = Math.min(
     1,

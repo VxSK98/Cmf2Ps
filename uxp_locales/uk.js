@@ -28,13 +28,13 @@ window.CMF2PS_LOCALES.uk = {
     "twoLevelLayout": "Дворівневий макет",
     "autoUpdatePreview": "Автооновлення прев’ю",
     "about": "Про програму",
-    "search": "Пошук зображень — SerpApi",
-    "yandex": "Яндекс Зображення"
+    "search": "Пошук зображень SerpApi",
+    "yandex": "Яндекс Картинки"
   },
   "hints": {
     "twoLevelLayout": "Виносить вікно попереднього перегляду в окрему праву колонку",
     "autoUpdatePreview": "Після отримання даних із ComfyUI автоматично перемикає на останній результат",
-    "serverAddress": "Адреса сервера (Beta)",
+    "serverAddress": "Адрес сервера (Beta)",
     "searchProvider": "Пошукова система"
   },
   "placeholders": {

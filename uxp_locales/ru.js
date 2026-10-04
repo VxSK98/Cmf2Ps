@@ -27,7 +27,7 @@ window.CMF2PS_LOCALES.ru = {
     "language": "Язык",
     "twoLevelLayout": "Двухуровневый макет",
     "autoUpdatePreview": "Автообновление превью",
-    "search": "Поиск картинок — SerpApi",
+    "search": "Поиск картинок SerpApi",
     "about": "О программе",
     "yandex": "Яндекс Картинки"
   },
