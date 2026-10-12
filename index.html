@@ -292,7 +292,8 @@
             <sp-action-button
               id="btnOpenRefFolder"
               class="settings-toggle-btn"
-              title="Открыть папку ComfyUI\input" data-i18n-title="titles.openRefFolder"
+              title="Открыть папку ComfyUI\input"
+              data-i18n-title="titles.openRefFolder"
               disabled
             >
               <img
@@ -353,7 +354,11 @@
           data-i18n-title="titles.settings"
           title="Настройки"
         >
-          <img src="images/cmf2ps_settings@2x.png" class="icon-btn-settings" />
+          <img
+            src="images/cmf2ps_settings_light.png"
+            class="icon-btn-settings"
+            data-theme-icon="settings"
+          />
         </sp-action-button>
       </div>
       <div class="preview-column" id="previewColumn">
@@ -380,7 +385,7 @@
                 title="Очистить превью"
               >
                 <img
-                  src="images/cmf2ps_clearImg_light@2x.png"
+                  src="images/cmf2ps_clearImg_light.png"
                   class="icon-btn-settings"
                   data-theme-icon="clear"
                 />
@@ -487,12 +492,16 @@
           <div class="padding-down"></div>
           <div class="main-action-row">
             <sp-textfield
-              id="imageSearchApiKeyField" data-i18n-title="titles.apiKey"
+              id="imageSearchApiKeyField"
+              data-i18n-title="titles.apiKey"
               class="backend-path-field"
               type="password"
               placeholder="*****************"
             ></sp-textfield>
-            <sp-action-button id="imageSearchClearKeyButton" data-i18n-title="titles.clearKey">
+            <sp-action-button
+              id="imageSearchClearKeyButton"
+              data-i18n-title="titles.clearKey"
+            >
               <img
                 src="images/cmf2ps_trashBox_light@2x.png"
                 class="icon-btn-settings"
@@ -508,7 +517,9 @@
             </div>
             <select id="imageSearchProviderSelect" class="image-search-select">
               <option value="google">Google Images</option>
-              <option value="yandex" data-i18n="labels.yandex">Яндекс Картинки</option>
+              <option value="yandex" data-i18n="labels.yandex">
+                Яндекс Картинки
+              </option>
             </select>
           </div>
           <div class="padding-down"></div>

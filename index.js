@@ -353,13 +353,15 @@ function isLightTheme(theme = document.theme.getCurrent()) {
 }
 
 function updateThemeIcons(theme = document.theme.getCurrent()) {
-  let clearIconPath = "images/cmf2ps_clearImg_dark@2x.png";
-  let trashIconPath = "images/cmf2ps_trashBox_dark@2x.png";
+  let clearIconPath = "images/cmf2ps_clearImg_dark.png";
+  let trashIconPath = "images/cmf2ps_trashBox_dark.png";
   let openFolderIconPath = "images/cmf2ps_openFolder_dark.png";
+  let settingsIconPath = "images/cmf2ps_settings_dark.png";
   if (isLightTheme(theme)) {
-    clearIconPath = "images/cmf2ps_clearImg_light@2x.png";
-    trashIconPath = "images/cmf2ps_trashBox_light@2x.png";
+    clearIconPath = "images/cmf2ps_clearImg_light.png";
+    trashIconPath = "images/cmf2ps_trashBox_light.png";
     openFolderIconPath = "images/cmf2ps_openFolder_light.png";
+    settingsIconPath = "images/cmf2ps_settings_light.png";
   }
   document.querySelectorAll('img[data-theme-icon="clear"]').forEach((img) => {
     img.src = clearIconPath;
@@ -373,6 +375,11 @@ function updateThemeIcons(theme = document.theme.getCurrent()) {
     .querySelectorAll('img[data-theme-icon="openFolder"]')
     .forEach((img) => {
       img.src = openFolderIconPath;
+    });
+  document
+    .querySelectorAll('img[data-theme-icon="settings"]')
+    .forEach((img) => {
+      img.src = settingsIconPath;
     });
 }
 
@@ -2873,7 +2880,7 @@ function connectWs() {
   document.getElementById("btnSendRefInFolder").disabled = true;
   document.getElementById("btnOpenRefFolder").disabled = true;
   document.getElementById("btnDelRefInFolder").disabled = true;
-  
+
   isConnecting = true;
   //  console.log("[CMF2PS] WS Test");
   ws = new WebSocket(getComfyWsUrl());
